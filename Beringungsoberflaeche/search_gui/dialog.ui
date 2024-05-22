@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>911</width>
+    <width>915</width>
     <height>655</height>
    </rect>
   </property>
@@ -16,46 +16,6 @@
   <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="1">
     <layout class="QGridLayout" name="gridLayout_4">
-     <item row="1" column="0">
-      <widget class="QLabel" name="LBL_zeitraum_bis">
-       <property name="text">
-        <string>bis:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QDateTimeEdit" name="DTE_bis">
-       <property name="maximumSize">
-        <size>
-         <width>150</width>
-         <height>16777215</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QDateTimeEdit" name="DTE_von">
-       <property name="maximumSize">
-        <size>
-         <width>150</width>
-         <height>16777215</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="LBL_zeitraum_von">
-       <property name="text">
-        <string>von:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
      <item row="2" column="0" colspan="2">
       <layout class="QGridLayout" name="GRID_zeitraum">
        <item row="1" column="0" colspan="2">
@@ -127,14 +87,148 @@
        </item>
       </layout>
      </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="LBL_zeitraum_bis">
+       <property name="text">
+        <string>bis:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDateTimeEdit" name="DTE_bis">
+       <property name="minimumSize">
+        <size>
+         <width>120</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>150</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="LBL_zeitraum_von">
+       <property name="text">
+        <string>von:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QDateTimeEdit" name="DTE_von">
+       <property name="minimumSize">
+        <size>
+         <width>120</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>150</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </item>
    <item row="3" column="0">
     <layout class="QGridLayout" name="gridLayout_5">
+     <item row="1" column="1">
+      <widget class="QRadioButton" name="RAD_spaltendiff_alter">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Alter</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="2" column="3">
+      <widget class="QCheckBox" name="CHB_alle_faenge">
+       <property name="text">
+        <string>alle Fänge</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QRadioButton" name="RAD_spaltendiff_sex">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Geschlecht</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Spaltendifferenzierung:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QRadioButton" name="RAD_spaltendiff_beringer">
+       <property name="text">
+        <string>Beringer</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="3" column="3">
+      <widget class="QCheckBox" name="CHB_median">
+       <property name="text">
+        <string>Median</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="CHB_normiert_exkl">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="toolTip">
+        <string>ab 5 Jahren wird mit 3. Grad normiert, ab 15 Jahren mit 5. Grad</string>
+       </property>
+       <property name="text">
+        <string>nur normiert</string>
        </property>
       </widget>
      </item>
@@ -149,19 +243,20 @@
       </widget>
      </item>
      <item row="4" column="3">
-      <widget class="QRadioButton" name="RAD_balken_horizontal">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
+      <widget class="QCheckBox" name="CHB_summen">
        <property name="text">
-        <string>Balken horizontal</string>
+        <string>Summen hinzufügen</string>
        </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup_2</string>
-       </attribute>
       </widget>
      </item>
-     <item row="2" column="3">
+     <item row="6" column="4">
+      <widget class="QCheckBox" name="CHB_trendlinie">
+       <property name="text">
+        <string>mit Trendlinie</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4">
       <widget class="QRadioButton" name="RAD_linie">
        <property name="text">
         <string>Linie</string>
@@ -171,34 +266,40 @@
        </attribute>
       </widget>
      </item>
-     <item row="5" column="3">
-      <widget class="QCheckBox" name="CHB_trendlinie">
+     <item row="1" column="4">
+      <widget class="QRadioButton" name="RAD_balken_vert">
        <property name="text">
-        <string>mit Trendlinie</string>
+        <string>Balken vertikal</string>
        </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup_2</string>
+       </attribute>
       </widget>
      </item>
-     <item row="5" column="2">
-      <widget class="QCheckBox" name="CHB_all_col_del">
-       <property name="text">
-        <string>leere Spalten löschen</string>
-       </property>
-       <property name="checked">
+     <item row="3" column="4">
+      <widget class="QRadioButton" name="RAD_kuchen">
+       <property name="enabled">
         <bool>true</bool>
        </property>
+       <property name="text">
+        <string>Kuchen</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup_2</string>
+       </attribute>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QRadioButton" name="RAD_spaltendiff_tag">
+     <item row="3" column="0">
+      <widget class="QRadioButton" name="RAD_spaltendiff_woche">
        <property name="text">
-        <string>Tag</string>
+        <string>Woche</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">buttonGroup</string>
        </attribute>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QRadioButton" name="RAD_spaltendiff_jahr">
@@ -225,70 +326,21 @@
        </item>
       </layout>
      </item>
-     <item row="0" column="3">
+     <item row="0" column="4">
       <widget class="QLabel" name="label_4">
        <property name="text">
         <string>Diagrammtyp:</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
-      <widget class="QRadioButton" name="RAD_spaltendiff_keine">
-       <property name="text">
-        <string>keine</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="QCheckBox" name="CHB_alle_faenge">
-       <property name="text">
-        <string>alle Fänge</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="3">
-      <widget class="QRadioButton" name="RAD_kuchen">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Kuchen</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup_2</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QRadioButton" name="RAD_spaltendiff_alter">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Alter</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="0" column="2">
+     <item row="0" column="3">
       <widget class="QLabel" name="label_2">
        <property name="text">
         <string>Anzeige:</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
+     <item row="1" column="3">
       <widget class="QCheckBox" name="CHB_erstfang">
        <property name="text">
         <string>Erstfänge</string>
@@ -296,42 +348,6 @@
        <property name="checked">
         <bool>true</bool>
        </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QRadioButton" name="RAD_spaltendiff_fangart">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>e/w/k</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QRadioButton" name="RAD_spaltendiff_woche">
-       <property name="text">
-        <string>Woche</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QRadioButton" name="RAD_spaltendiff_sex">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Geschlecht</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
       </widget>
      </item>
      <item row="2" column="0">
@@ -347,36 +363,79 @@
        </attribute>
       </widget>
      </item>
-     <item row="1" column="3">
-      <widget class="QRadioButton" name="RAD_balken_vert">
+     <item row="4" column="4">
+      <widget class="QRadioButton" name="RAD_balken_horizontal">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
-        <string>Balken vertikal</string>
+        <string>Balken horizontal</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">buttonGroup_2</string>
        </attribute>
       </widget>
      </item>
-     <item row="3" column="2">
-      <widget class="QCheckBox" name="CHB_median">
+     <item row="2" column="1">
+      <widget class="QRadioButton" name="RAD_spaltendiff_fangart">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="text">
-        <string>Median</string>
+        <string>e/w/k</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="6" column="3">
+      <widget class="QCheckBox" name="CHB_all_col_del">
+       <property name="text">
+        <string>leere Spalten löschen</string>
        </property>
        <property name="checked">
         <bool>true</bool>
        </property>
       </widget>
      </item>
+     <item row="1" column="0">
+      <widget class="QRadioButton" name="RAD_spaltendiff_tag">
+       <property name="text">
+        <string>Tag</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
      <item row="5" column="1">
-      <widget class="QCheckBox" name="CHB_normiert_exkl">
-       <property name="enabled">
+      <widget class="QRadioButton" name="RAD_spaltendiff_keine">
+       <property name="text">
+        <string>keine</string>
+       </property>
+       <property name="checked">
         <bool>true</bool>
        </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>Zeilendifferenzirg.:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QCheckBox" name="CHB_zeilendiff_summen">
        <property name="toolTip">
-        <string>ab 5 Jahren wird mit 3. Grad normiert, ab 15 Jahren mit 5. Grad</string>
+        <string>Die Anzeigeeinstellung wird ignoriert und es werden nur der Summenwert über die Zeilen angezeigt</string>
        </property>
        <property name="text">
-        <string>nur normiert</string>
+        <string>Summen</string>
        </property>
       </widget>
      </item>
@@ -441,6 +500,9 @@
          <width>16777215</width>
          <height>25</height>
         </size>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
        </property>
        <property name="value">
         <number>0</number>
@@ -775,7 +837,6 @@
   <tabstop>RAD_spaltendiff_alter</tabstop>
   <tabstop>RAD_spaltendiff_fangart</tabstop>
   <tabstop>RAD_spaltendiff_sex</tabstop>
-  <tabstop>RAD_spaltendiff_keine</tabstop>
   <tabstop>CHB_erstfang</tabstop>
   <tabstop>CHB_alle_faenge</tabstop>
   <tabstop>CHB_median</tabstop>
@@ -791,7 +852,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_2"/>
   <buttongroup name="buttonGroup"/>
+  <buttongroup name="buttonGroup_2"/>
  </buttongroups>
 </ui>
