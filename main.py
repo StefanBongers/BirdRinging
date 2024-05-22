@@ -3,9 +3,11 @@ import math
 import os
 from typing import Literal
 
+import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from PIL import Image
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QColor
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -25,9 +27,9 @@ from kalendar import Pentad
 from PyQt5.QtWidgets import (QPushButton, QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox, QDialog,
                              QTableWidgetItem, QTreeWidgetItem, QTreeWidgetItemIterator, QFileDialog, QWidget,
                              QVBoxLayout, QSizePolicy, QShortcut, QGraphicsPixmapItem, QGraphicsScene, QGraphicsView,
-                             QMainWindow, QCheckBox, QRadioButton)
+                             QMainWindow, QCheckBox, QRadioButton, QTableWidget, QTextEdit, QHBoxLayout)
 from PyQt5 import QtWidgets, QtGui, QtCore, sip
-from PyQt5.QtCore import QDate, QTime, Qt, QEvent, QObject
+from PyQt5.QtCore import QDate, QTime, Qt, QEvent, QObject, QRegularExpression
 from cryptography.fernet import Fernet
 from img_viewer import ImageViewer
 
@@ -64,6 +66,22 @@ class GeierStates:
     def get_input_allowed(self) -> bool:
         return self.eingabe_ok
 
+    def ueber_geier(self):
+        if self:
+            pass
+        txt = f'GEIER - GUI EINES INSIDERS ENTWICKELT fuer RINGER\n\n'
+        txt += f'Version {bd.get_version()}\n\n'
+        txt += f'Entwickelt von S. Bongers und T. Jaschke im Jahr 2023 und 2024\n\n'
+        txt1 = bd.get_kontaktdaten()
+        txt += f"{txt1:>6}\n\n"
+        txt += f'Anmerkung:\n'
+        txt2 = ('Die Entwicklung dieses Programms hat in reiner Freizeit stattgefunden. Daher ist es nicht auszuschließen, '
+                'dass es zu Fehlern oder unerwarteten Reaktionen kommt. Bitte nutzt den Kontakt- und/oder den '
+                'Feedback-Menueintrag.')
+        txt += f'{txt2:>6}'
+
+        rberi_lib.QMessageBoxB('ok', txt, 'Über Geier', icontyp='Information').exec_()
+
 
 class CurrentUser:
     """
@@ -92,6 +110,221 @@ class CurrentUser:
 
     def getlevel(self):
         return int(self.lvl)
+
+
+class Kontakt_Menu_GUI(QDialog):
+    def __init__(self, menuaufruf: str = 'kontakt'):
+        super().__init__(parent=None)
+        self.cancel_ = QPushButton()
+        self.save_ok = QPushButton()
+        self.radio5 = QRadioButton()
+        self.radio4 = QRadioButton()
+        self.radio2 = QRadioButton()
+        self.radio3 = QRadioButton()
+        self.radio1 = QRadioButton()
+        self.checkbox_anregung = QCheckBox()
+        self.text_input = QLineEdit()
+        self.label3 = QLabel()
+        self.email_input = QLineEdit()
+        self.label2 = QLabel()
+        self.checkbox = QCheckBox()
+        self.name_input = QLineEdit()
+        self.label1 = QLabel()
+
+        self.typ = menuaufruf
+
+        if menuaufruf == 'kontakt':
+            self.setWindowTitle('Kontaktformular')
+        elif menuaufruf == 'feedback':
+            self.setWindowTitle('Feedbackformular')
+
+        self.setup_ui()
+        self.connections()
+
+    def get_typ(self):
+        """
+        
+        :return:
+        1, 'kontakt'
+        2, 'feedback' 
+        """
+        if self.typ == 'kontakt':
+            return 1, self.typ
+        else:
+            return 2, self.typ
+
+    def setup_ui(self):
+        layout = QGridLayout()
+        self.label1.setText('Name:')
+        self.checkbox.setText('Antwort erbeten')
+        self.label2.setText('Email:')
+        self.label3.setText('Nachricht:')
+        self.text_input = rberi_lib.QTextEditFeedback()
+        self.text_input.set_max_text_length(2000)
+        self.text_input.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
+        self.checkbox_anregung.setText('Feedback enthält Anregung/Erweiterungs-/Änderungswunsch')
+        self.checkbox_anregung.setChecked(False)
+
+        layout2 = QHBoxLayout()
+
+        self.radio1.setText('super geil!')
+        self.radio2.setText('super!')
+        self.radio3.setText('alles ok!')
+        self.radio4.setText('schlechter als vorher')
+        self.radio5.setText('schrecklich!!!')
+
+        layout2.addWidget(self.radio1)
+        layout2.addWidget(self.radio2)
+        layout2.addWidget(self.radio3)
+        layout2.addWidget(self.radio4)
+        layout2.addWidget(self.radio5)
+
+        widget_radiobuttons = QWidget()
+        widget_radiobuttons.setLayout(layout2)
+
+        self.save_ok.setText('Absenden')
+        self.cancel_.setText('Lieber doch nicht')
+        layout3 = QHBoxLayout()
+        layout3.addWidget(self.save_ok)
+        layout3.addWidget(self.cancel_)
+        widget_buttons = QWidget()
+        widget_buttons.setLayout(layout3)
+
+        layout.addWidget(self.label1, 0, 0)
+        layout.addWidget(self.name_input, 1, 0)
+        layout.addWidget(self.checkbox, 2, 0)
+
+        layout.addWidget(self.label2, 3, 0)
+        layout.addWidget(self.email_input, 4, 0)
+        spacerItem = QtWidgets.QSpacerItem(10, 30, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        layout.addItem(spacerItem, 5, 0)
+        layout.addWidget(self.label3, 6, 0)
+        layout.addWidget(self.text_input, 7, 0)
+        layout.addWidget(self.checkbox_anregung, 8, 0)
+
+        layout.addWidget(widget_radiobuttons, 9, 0)
+        layout.addWidget(widget_buttons, 10, 0)
+
+        if self.get_typ()[0] == 1:
+            self.checkbox.setChecked(True)
+            self.email_input.setVisible(True)
+            self.checkbox_anregung.setVisible(False)
+            self.radio1.setVisible(False)
+            self.radio2.setVisible(False)
+            self.radio3.setVisible(False)
+            self.radio4.setVisible(False)
+            self.radio5.setVisible(False)
+
+        else:
+            self.checkbox.setChecked(False)
+            self.label2.setVisible(False)
+            self.email_input.setVisible(False)
+            self.label3.setText('Feedback:')
+
+        self.label3.setText(self.label3.text() + " (" + str(self.text_input.get_max_text_length()) + "/" + str(
+            self.text_input.get_max_text_length()) + ")")
+        self.setLayout(layout)
+
+    def connections(self):
+        self.save_ok.clicked.connect(self.save)
+        self.cancel_.clicked.connect(self.reject)
+        self.checkbox.toggled.connect(self.kontakt_ja_nein)
+        self.text_input.textChanged.connect(self.__format_label3)
+
+    def __format_label3(self):
+        if self.get_typ()[1] == 'kontakt':
+            label3_schnipsel = 'Nachricht: '
+        else:
+            label3_schnipsel = 'Feedback :'
+        self.label3.setText(label3_schnipsel + " (" + str(self.text_input.get_diff()) + "/" + str(
+            self.text_input.get_max_text_length()) + ")")
+
+    def save(self):
+        txt = ''
+        if not get_connection_status(engine):
+            return
+        if len(self.name_input.text()) <= 0:
+            txt = 'Name'
+        if self.checkbox.isChecked() and (len(self.email_input.text()) <= 0 or self.email_input.text().find("@") <= 0):
+            if len(txt) > 0:
+                txt += ', Email'
+            else:
+                txt = 'Email'
+        if len(self.text_input.toPlainText()) <= 0:
+            if len(txt) > 0:
+                if self.get_typ()[0] == 1:
+                    txt += ', Kontakttext'
+                else:
+                    txt += ', Feedbacktext'
+            else:
+                if self.get_typ()[0] == 1:
+                    txt += 'Kontakttext'
+                else:
+                    txt += 'Feedbacktext'
+        if (self.radio4.isChecked() or self.radio5.isChecked()) and not self.checkbox_anregung.isChecked():
+            rberi_lib.QMessageBoxB('ok', 'Wer nur schlecht bewertet und keine Anregung hinterlässt, muss erst gar nichts '
+                                         'sagen.', 'Verarschung?').exec_()
+            self.reject()
+
+        if len(txt) > 0:
+            if txt.find(",") > 0:
+                rberi_lib.QMessageBoxB('ok', f'Folgende Einträge fehlen: {txt}', 'Fehlende Einträge').exec_()
+            else:
+                rberi_lib.QMessageBoxB('ok', f'Folgender Eintrag fehlt: {txt}', 'Fehlende Einträge').exec_()
+            return
+
+        zeitstempel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        name = self.name_input.text()
+        email = self.email_input.text()
+        kontaktaufnahme = 'Y' if self.checkbox.isChecked() else 'N'
+        feedbacktext = self.text_input.toPlainText()
+        verbesserung = 'Y' if self.checkbox_anregung.isChecked() else 'N'
+        if self.radio1.isChecked():
+            rating = '1'
+        elif self.radio2.isChecked():
+            rating = '2'
+        elif self.radio3.isChecked():
+            rating = '3'
+        elif self.radio4.isChecked():
+            rating = '4'
+        elif self.radio5.isChecked():
+            rating = '5'
+        else:
+            rating = None
+
+        cursor = engine.cursor()
+        try:
+            cursor.execute('INSERT INTO beringung.feedback (zeitstempel, name, kontaktaufnahme, mail, text, verbesserung, '
+                           'rating) VALUES (%s, %s, %s, %s, %s, %s, %s)', (zeitstempel, name, kontaktaufnahme, email, feedbacktext,
+                                                                           verbesserung, rating))
+            engine.commit()
+            cursor.close()
+        except Exception as excp:
+            rberi_lib.QMessageBoxB('ok', 'Konnte das Feedback leider nicht speichern. ', 'Datenbankfehler', str(excp)).exec_()
+            return
+
+        self.accept()
+        txt = ''
+        if self.get_typ()[0] == 1:
+            txt1 = 'Deine Nachricht'
+            txt2 = ('Wir melden uns bei Dir! Dies kann jedoch einige Tage/Wochen dauern, da Deine Nachricht nur lokal '
+                    'gespeichert wird und nicht versendet. Bitte habe daher ein wenig Geduld.')
+        else:
+            txt1 = 'Dein Feedback!'
+            if len(email) > 0:
+                txt2 = ('Wir melden uns bei Dir! Dies kann jedoch einige Tage/Wochen dauern, da Dein Feedback nur lokal '
+                        'gespeichert wird und nicht versendet. Bitte habe daher ein wenig Geduld.')
+        rberi_lib.QMessageBoxB('ok', f'Danke für {txt1}! {txt2}', 'Danke!').exec_()
+        self.close()
+
+    def kontakt_ja_nein(self):
+        if self.checkbox.isChecked():
+            self.label2.setVisible(True)
+            self.email_input.setVisible(True)
+        else:
+            self.label2.setVisible(False)
+            self.email_input.setVisible(False)
 
 
 class MplCanvas(FigureCanvas):
@@ -130,6 +363,7 @@ class Loginpage(QtWidgets.QDialog):
         self.resize(350, 200)
         layout = QGridLayout()
         label1 = QLabel('Benutzername:')
+
         # aus dem übergebenen dataframe wird die Liste der Benutzer extrahiert und hier übergeben
         benutzer = df_user.username
         self.user_obj = QComboBox()
@@ -138,7 +372,6 @@ class Loginpage(QtWidgets.QDialog):
         layout.addWidget(label1, 0, 0)
         layout.addWidget(self.user_obj, 0, 1)
         label2 = QLabel("Password:")
-        # label2.setFont(QFont("Arial", 8))
         self.user_pwd = QLineEdit()
         self.user_pwd.setEchoMode(QLineEdit.Password)
         layout.addWidget(label2, 1, 0)
@@ -147,47 +380,45 @@ class Loginpage(QtWidgets.QDialog):
         layout.addWidget(self.button_login, 2, 0, 2, 2)
         self.setLayout(layout)
         self.user_pwd.setFocus(True)
+
         # Signals / Reconnections
-        self.user_pwd.returnPressed.connect(self.on_login_clicked)
         self.button_login.clicked.connect(self.on_login_clicked)
 
     def on_login_clicked(self):
-        if not bd.get_mit_anmeldung():
-            self.user_obj.setCurrentText("admin")
         user_index = self.df_user.index[(self.df_user["username"] == self.user_obj.currentText())]
         password = self.df_user.password[user_index].tolist()
         f_ = Fernet(bd.get_key())
         token_ = f_.decrypt(password[0])
         pw_ = token_.decode()
         u_level = self.df_user.level[user_index].tolist()
+        add_text = ""
 
-        if str(self.user_pwd.text()) == str(pw_) or not bd.get_mit_anmeldung():
+        if str(self.user_pwd.text()) == str(pw_):
             # passwort korrekt
             if self.count_login == 1:
                 add_text = str(self.count_login) + " erfolgloser Anmeldeversuch!"
             elif self.count_login > 1:
                 add_text = str(self.count_login) + " erfolglose Anmeldeversuche!"
-            else:
-                add_text = ""
-            if not bd.get_mit_anmeldung():
-                add_text += " --- Autologin über basic_definitions > mit_anmeldung = False"
+
             logging(self.user_obj.currentText(), datetime.now(), "login", add_text)
             self.u.set(self.user_obj.currentText(), u_level)
             self.accept()
-            # self.close()
         else:
-            # print("pw inkorrekt!")
             self.count_login += 1
-            wrongpw_ui = QtWidgets.QMessageBox()
-            wrongpw_ui.setIcon(QtWidgets.QMessageBox.Warning)
-            wrongpw_ui.setWindowTitle("Fehlerhafter Login ... ")
-            wrongpw_ui.setText("Passwort/Benutzername-Kombination inkorrekt. Bitte nochmals versuchen ... ")
-            wrongpw_ui.setStandardButtons(QtWidgets.QMessageBox.Ok)
-            wrongpw_ui.setDefaultButton(QtWidgets.QMessageBox.Ok)
-            wrongpw_ui.exec_()
+            tit = "Fehlerhafter Login ... "
+            msg = "Passwort/Benutzername-Kombination inkorrekt. Bitte nochmals versuchen ... "
+            rberi_lib.QMessageBoxB('ok', msg, tit, icontyp='Warning').exec_()
 
+    def auto_login(self, username: str = 'admin'):
+        self.user_obj.setCurrentText(username)
+        add_text = " --- Autologin über basic_definitions > mit_anmeldung = False"
+        logging(username, datetime.now(), "login", add_text)
+        self.accept()
+
+
+class _UiSearch(QWidget):
     """
-   =====================================================================================================================
+    =====================================================================================================================
     class ArtverwaltungWindow
         init
                 Fenster wird aufgebaut, wenn DB-Verbindung besteht.
@@ -237,15 +468,14 @@ class Loginpage(QtWidgets.QDialog):
             state = gleich: compares both interal arrays. same ==> return true; different ==> return false
                 if editing starts, this function can be called to save all form-values (internally). analog the same
                 values can be saved (internally) if editing is finished. calling the function with 'gleich' makes
-                the "are-you-sure?"-Dialog obsolet (no changes, function returns TRUE) or not 
+                the "are-you-sure?"-Dialog obsolet (no changes, function returns TRUE) or not
                 (changes! func returns FALSE)
-    ====================================================================================================================
+
     """
 
-
-class _UiSearch(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.df_current = None
         self.vlayout = None
         self.toolbar = None
         self.sc = None
@@ -268,7 +498,8 @@ class _UiSearch(QWidget):
 
     def eventFilter(self, a0, a1: QEvent):
         if a1 == QtGui.QKeyEvent:
-            print(f"a0={a0}, a1={a1}")
+            if bd.get_debug():
+                print(f"a0={a0}, a1={a1}")
             if a1.key() == Qt.Key_Return:
                 AllItems = [self.search_ui.CMB_art.itemText(i) for i in range(self.search_ui.CMB_art.count())]
                 if self.search_ui.CMB_art.currentText() in AllItems:
@@ -307,6 +538,8 @@ class _UiSearch(QWidget):
         self.search_ui.BTN_close.clicked.connect(self.close)
         self.search_ui.CHB_normiert.toggled.connect(lambda: self.toggle_normiert('inkl'))
         self.search_ui.CHB_normiert_exkl.toggled.connect(lambda: self.toggle_normiert('exkl'))
+        self.search_ui.CHB_zeilendiff_summen.toggled.connect(self.zeilensummen)
+        self.search_ui.RAD_spaltendiff_beringer.toggled.connect(self.spaltendiff_beringer)
 
         # self.search_ui.CMB_art.keyPressEvent.connect(self.enter_pressed)
 
@@ -466,6 +699,10 @@ class _UiSearch(QWidget):
     def spaltendiff_keine(self):
         pass
 
+    def spaltendiff_beringer(self):
+        if self.search_ui.CHB_median.isChecked():
+            self.search_ui.CHB_median.setChecked(False)
+
     def get_diff(self, typ: Literal['y', 'm', 'w', 'p', 'd', 'h', 'min', 's'] = 's') -> int:
         """
         Funktion gibt die Differenz von Enddatum und Startdatum an (aus den Widgets DTE_von und DTE_bis).
@@ -482,20 +719,6 @@ class _UiSearch(QWidget):
         :return:
         int: Anzahl der Einheiten (definiert im Parameter 'typ') zwischen DTE_von und DTE_bis
         """
-
-        yr_ct = 365 * 24 * 60 * 60  # 31.536.000
-        week_ct = 60 * 60 * 24 * 7  # 604.800
-        pentade_ct = 60 * 60 * 24 * 5  # 432.000
-        day_ct = 24 * 60 * 60  # 86.400
-        hour_ct = 60 * 60  # 3.600
-        minute_ct = 60
-        von = self.search_ui.DTE_von.dateTime()
-        bis = self.search_ui.DTE_bis.dateTime()
-        diff_s = von.secsTo(bis)
-        monat_bis = bis.date().month()
-        jahr_bis = bis.date().year()
-        monat_von = von.date().month()
-        jahr_von = von.date().year()
 
         def yrs():
             return divmod(diff_s, yr_ct)[0]
@@ -535,6 +758,19 @@ class _UiSearch(QWidget):
 
         def secs():
             return diff_s
+
+        yr_ct = 365 * 24 * 60 * 60  # 31.536.000
+        week_ct = 60 * 60 * 24 * 7  # 604.800
+        day_ct = 24 * 60 * 60  # 86.400
+        hour_ct = 60 * 60  # 3.600
+        minute_ct = 60
+        von = self.search_ui.DTE_von.dateTime()
+        bis = self.search_ui.DTE_bis.dateTime()
+        diff_s = von.secsTo(bis)
+        monat_bis = bis.date().month()
+        jahr_bis = bis.date().year()
+        monat_von = von.date().month()
+        jahr_von = von.date().year()
 
         if typ == "y":
             return int(yrs())
@@ -620,6 +856,10 @@ class _UiSearch(QWidget):
         self.search_ui.DTE_bis.setDate(QDate(year - 1, 11, 8))
         self.search_ui.DTE_bis.setTime(QTime(23, 59, 59, 999))
 
+    def set_season_limits(self):
+        self.search_ui.DTE_von.setDate(QDate(self.search_ui.DTE_von.date().year(), 6, 30))
+        self.search_ui.DTE_bis.setDate(QDate(self.search_ui.DTE_von.date().year(), 11, 7))
+
     def ringer_plus(self):
         if self.search_ui.CMB_ringer.currentIndex() < 0:
             return
@@ -671,26 +911,57 @@ class _UiSearch(QWidget):
         df_complex = pd.DataFrame()
 
         # es wird ausgelesen, wieviele Arten im df vorhanden sind
-        art_anz = df['art'].unique().tolist()
+        art_anz_tmp = df['art'].unique().tolist()
+        art_anz = [x for x in art_anz_tmp if x is not None]
         art_anz.sort()
+
+        # falls es weniger arten sind, die wirklich gefangen wurden, wird der frame (also der maximal mögliche Fortschritt pro
+        # Art, neuberechnen und gesetzt. Hintergrund: wählt man alle Arten aus, sind es angenommen 100. D.h. der initiierte
+        # frame ist progressanzeige_max / 100 - zB 100000/100 = 1000 'Punkte' pro Art. Wenn aber von den 100 ausgewählten nur
+        # 50 gefangen wurden, muss der frame entsprechend auf 2000 'Punkte' pro Art geändert werden (da ja auch nur gefangene
+        # Arten ausgewertet werden).
+        if self.search_ui.PRGB_dav.maximum() / len(art_anz) > frame:
+            frame = self.search_ui.PRGB_dav.maximum() / len(art_anz)
+
         if not art_anz:
             return df_complex
-        ages = df['alter'].unique().tolist()
+        ages_tmp = df['alter'].unique().tolist()
+        ages = [x for x in ages_tmp if x is not None]
         ages.sort()
-        sexes = df['geschlecht'].unique().tolist()
+
+        sexes_tmp = df['geschlecht'].unique().tolist()
+        sexes = [x for x in sexes_tmp if x is not None]
         sexes.sort()
-        fangarten = df['fangart'].unique().tolist()
+
+        fangarten_tmp = df['fangart'].unique().tolist()
+        fangarten = [x for x in fangarten_tmp if x is not None]
         fangarten.sort()
 
-        if self.get_diff('y') + 1 > 5 and self.search_ui.CHB_normiert.isChecked():
-            df_jahresanzahl = pd.read_sql('SELECT fangart FROM esf WHERE jahr >= ' + str(start['y']) + ' and jahr <= ' +
-                                          str(ende['y']), engine)
-            df_jahresanzahl_ek = df_jahresanzahl.loc[((df_jahresanzahl['fangart'] == 'e') | (df_jahresanzahl['fangart'] == 'k'))]
-            periodenmittel_ek = df_jahresanzahl_ek.shape[0] / self.get_diff('y') + 1
-            periodenmittel_ekw = df_jahresanzahl.shape[0] / self.get_diff('y') + 1
+        beringer_kuerzel_tmp = df['ringer'].unique().tolist()
+        beringer_kuerzel = [x for x in beringer_kuerzel_tmp if x is not None]
+        beringer_kuerzel.sort()
 
+        df_ringer_auswahl = pd.DataFrame(columns=['ringer', 'namevoll'])
+        for ringer in beringer_kuerzel:
+            namevoll = (self.df_ringer.query('ringer_new == "' + ringer + '"')['nachname'].iloc[0] + ", " +
+                        self.df_ringer.query('ringer_new == "' + ringer + '"')['vorname'].iloc[0])
+            df_ringer_auswahl = df_ringer_auswahl._append({'ringer': ringer, 'namevoll': namevoll}, ignore_index=True)
+
+        df_ringer_auswahl.sort_values(by='namevoll', inplace=True)
+
+        """if self.get_diff('y') + 1 > 5 and self.search_ui.CHB_normiert.isChecked():
+            df_jahresanzahl = pd.read_sql('SELECT fangart FROM esf WHERE jahr >= ' + str(start['y']) + ' and jahr <= ' +
+                                          str(ende['y']), engine)"""
         # für jede Art wird der Eintrag in dem RüCKGABE-df erzeugt.
+        artcnt = 0
+        # start_val_glob = self.search_ui.PRGB_dav.value()
         for art in art_anz:
+            val_glob = math.floor(artcnt * frame)
+            self.search_ui.PRGB_dav.setValue(val_glob)
+            if bd.get_debug():
+                print(f"artcnt/artcnt_ges = {artcnt}/{len(art_anz)} --- value = {self.search_ui.PRGB_dav.value()}/10.000 -- "
+                      f"frame = {frame}")
+
             df_art = df.loc[df['art'] == art]
             art_dt = self.df_arten.query('esf_kurz == "' + str(art) + '"')['deutsch'].iloc[0]
 
@@ -706,13 +977,12 @@ class _UiSearch(QWidget):
                     normierungs_grad = 5
                 else:
                     normierungs_grad = 3
-                normierungs_korrektur = 0
                 # Start-Wert der Progressbar
-                start_val = self.search_ui.PRGB_dav.value()
+                start_val_lok = self.search_ui.PRGB_dav.value()
                 for i in range(yrs):  # Start bei 0
-                    val = math.floor(i * frame / yrs)  # für den Progressbar-Fortschritt
-                    self.search_ui.PRGB_dav.setValue(start_val + val)
-                    self.search_ui.PRGB_dav.repaint()
+                    val_lok = math.floor(i * frame / yrs)  # für den Progressbar-Fortschritt
+                    self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
+
                     # hier werden die Daten definiert, ab und bis wann die SQL-Abfrage erfolgen soll
                     date_stamp_start = date(start['y'] + i, 1, 1)
                     date_stamp_end = date(start['y'] + i, 12, 31)
@@ -732,16 +1002,17 @@ class _UiSearch(QWidget):
                                 val2insert = 0
                                 for j in range(0, normierungs_grad):
                                     val2insert += normierungs_wert[normierungs_counter - j]
-                                val2insert = val2insert/normierungs_grad
+                                val2insert = val2insert / normierungs_grad
                                 df_complex.loc[str(art_dt) + "\ne+k (normiert)", str(start['y'] + i)] = round(val2insert, 0)
                                 normierungs_counter += 1
                             # df_complex.loc[str(art_dt) + "\ne+k", str(start['y'] + i)] = len(df_h)
 
                     if self.search_ui.CHB_alle_faenge.isChecked():
-                        df_hilfs = df_art.loc[(df_art["datum"] >= date_stamp_start) & (df_art["datum"] <= date_stamp_end)]
+                        df_h = df_art.loc[(df_art["datum"] >= date_stamp_start) & (df_art["datum"] <= date_stamp_end)]
+
                         # df_complex.loc[1, str(start['y'] + i) + "\ntotal"] = len(df_hilfs)
                         if not self.search_ui.CHB_normiert_exkl.isChecked():
-                            df_complex.loc[str(art_dt) + "\ne+k+w", str(start['y'] + i)] = len(df_hilfs)
+                            df_complex.loc[str(art_dt) + "\ne+k+w", str(start['y'] + i)] = len(df_h)
                         if normiert:
                             if normierungs_counter < normierungs_grad:
                                 normierungs_wert[normierungs_counter] = len(df_h)
@@ -777,10 +1048,10 @@ class _UiSearch(QWidget):
                 mts = self.get_diff('m')
                 if mts == 0:
                     mts = 1
-                start_val = self.search_ui.PRGB_dav.value()
+                start_val_lok = self.search_ui.PRGB_dav.value()
                 for i in range(mts):  # Start bei 0
-                    val = math.floor(i * frame / mts)
-                    self.search_ui.PRGB_dav.setValue(start_val + val)
+                    val_lok = math.floor(i * frame / mts)
+                    self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
                     date_stamp_start = date(jahr, monat, 1)
                     date_stamp_end = date(jahr, monat, monthrange(jahr, monat)[1])
                     if self.search_ui.CHB_erstfang.isChecked():
@@ -819,10 +1090,10 @@ class _UiSearch(QWidget):
                 start_date = (date(start['y'], start['m'], start['d']) -
                               timedelta(days=date(start['y'], start['m'], start['d']).weekday()))
                 wks = self.get_diff('w') + 1
-                start_val = self.search_ui.PRGB_dav.value()
+                start_val_lok = self.search_ui.PRGB_dav.value()
                 for i in range(wks):  # Start bei 0
-                    val = math.floor(i * frame / wks)  # 28*52 = 1456 → bei einer Art: 100/1456 = 0,06868132
-                    self.search_ui.PRGB_dav.setValue(start_val + val)
+                    val_lok = math.floor(i * frame / wks)  # 28*52 = 1456 → bei einer Art: 100/1456 = 0,06868132
+                    self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
                     date_stamp_start = start_date + timedelta(days=7 * i)
                     date_stamp_end = date_stamp_start + timedelta(days=7)
                     wochennummer = QDate(date_stamp_start.year, date_stamp_start.month,
@@ -862,10 +1133,10 @@ class _UiSearch(QWidget):
 
             elif self.search_ui.RAD_spaltendiff_tag.isChecked():
                 dys = self.get_diff('d') + 1
-                start_val = self.search_ui.PRGB_dav.value()
+                start_val_lok = self.search_ui.PRGB_dav.value()
                 for i in range(dys):  # Start bei 0
-                    val = math.floor(i * frame / dys)
-                    self.search_ui.PRGB_dav.setValue(start_val + val)
+                    val_lok = math.floor(i * frame / dys)
+                    self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
                     date_stamp_start = date(start['y'], start['m'], start['d']) + timedelta(days=i)
                     if self.search_ui.CHB_erstfang.isChecked():
                         df_h = df_art.loc[(df_art["datum"] == date_stamp_start) &
@@ -903,12 +1174,12 @@ class _UiSearch(QWidget):
 
                 # nur für die Fortschrittsanzeige:
                 pentaden = self.get_diff('p') + 1
-                start_val = self.search_ui.PRGB_dav.value()
+                start_val_lok = self.search_ui.PRGB_dav.value()
                 i = 0
 
                 while (end_p.year == start_p.year and end_p.pentad > curr_p.pentad) or (end_p.year > curr_p.year):
-                    val = math.floor(i * frame / pentaden)
-                    self.search_ui.PRGB_dav.setValue(start_val + val)
+                    val_lok = math.floor(i * frame / pentaden)
+                    self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
                     next_p = curr_p + 1
                     next_date_start = next_p.todate()
                     if self.search_ui.CHB_erstfang.isChecked():
@@ -981,12 +1252,43 @@ class _UiSearch(QWidget):
                             df_complex.loc[art_dt + "\n" + txt, "Geschlecht:\n" + str(sex)] = len(df_tmp)
 
             elif self.search_ui.RAD_spaltendiff_fangart.isChecked():
-                date_stamp_start = date(start['y'], start['m'], start['d'])
-                date_stamp_end = date(ende['y'], ende['m'], ende['d'])
                 if fangarten:
+                    start_val_lok = self.search_ui.PRGB_dav.value()
+                    i = 0
                     for fangart in fangarten:
+                        val_lok = math.floor(i * frame / len(fangarten))
+                        self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
                         df_tmp = df_art.loc[df_art['fangart'] == fangart]
                         df_complex.loc[art_dt, "Fangart:\n" + fangart] = len(df_tmp)
+                        i += 1
+
+            elif self.search_ui.RAD_spaltendiff_beringer.isChecked():
+                anz_ringer = df_ringer_auswahl.shape[0]
+                start_val_lok = self.search_ui.PRGB_dav.value()
+                if bd.get_debug():
+                    print(f"Start_val_lok = {start_val_lok}")
+                date_stamp_start = date(start['y'], start['m'], start['d'])
+                date_stamp_end = date(ende['y'], ende['m'], ende['d'])
+                txt = 'e+k+w'
+                if beringer_kuerzel:
+                    i = 0
+                    for ind, ser in df_ringer_auswahl.iterrows():
+                        val_lok = math.floor(i * frame / anz_ringer)
+                        self.search_ui.PRGB_dav.setValue(start_val_lok + val_lok)
+                        """print(f"val_lok = {val_lok}")
+                        print(f"start_val_lok + val_lok = {start_val_lok + val_lok}")
+                        print(f"frame = {frame}")"""
+
+                        if self.search_ui.CHB_alle_faenge.isChecked():
+                            df_tmp = df_art.loc[df_art['ringer'] == ser['ringer']]
+                            df_complex.loc[art_dt + "\n" + txt, ser['namevoll']] = len(df_tmp)
+                        elif self.search_ui.CHB_erstfang.isChecked():
+                            df_h = df_art.loc[(df_art["datum"] >= date_stamp_start) & (df_art["datum"] <= date_stamp_end) &
+                                              ((df_art["fangart"] == 'e') | (df_art['fangart'] == 'k'))]
+                            txt = 'e+k'
+                            df_tmp = df_h.loc[df_h['ringer'] == ser['ringer']]
+                            df_complex.loc[art_dt + "\n" + txt, ser['namevoll']] = len(df_tmp)
+                        i += 1
 
             elif self.search_ui.RAD_spaltendiff_keine.isChecked():
                 # hier werden die Daten definiert, ab und bis wann die SQL-Abfrage erfolgen soll
@@ -1013,15 +1315,22 @@ class _UiSearch(QWidget):
                     else:
                         d = "---"
                     df_complex.loc[art_dt + "\nMedian(e+k)", str(date_stamp_start) + " - " + str(date_stamp_end)] = d
+            artcnt += 1
 
+        if self.search_ui.CHB_summen.isChecked():
+            sums_row = df_complex.sum(axis=1, skipna=True, numeric_only=True)
+            df_complex.insert(loc=len(df_complex.columns), column='Summe:', value=sums_row)
+            for ind, ser in df_complex.items():
+                df_complex.loc["Summe:", ind] = ser.sum()
         return df_complex
 
     def __show(self):
+        self.search_ui.TBL_ergebnis.setSortingEnabled(False)
         if self.search_ui.TREE_arten.topLevelItemCount() == 0:
             rberi_lib.QMessageBoxB('ok', "Bitte gib mindestens eine Art an.",
                                    "Fehlende Information").exec_()
             return
-        self.search_ui.TBL_ergebnis.clear()
+        self.search_ui.TBL_ergebnis.clearContents()
 
         str_art = "art ='"
         for el in iter_tree_widget(self.search_ui.TREE_arten):
@@ -1041,7 +1350,7 @@ class _UiSearch(QWidget):
                     str(self.search_ui.DTE_von.date().day()))
         bis_date = (str(self.search_ui.DTE_bis.date().year()) + "-" + str(self.search_ui.DTE_bis.date().month()) + "-" +
                     str(self.search_ui.DTE_bis.date().day()))
-        sql_text = ("SELECT art, fangart, datum, uhrzeit, esf.alter, geschlecht from esf where "
+        sql_text = ("SELECT art, fangart, datum, uhrzeit, esf.alter, geschlecht, ringer from esf where "
                     "datum >= '" + von_date +
                     "' and datum <= '" + bis_date +
                     "' and (" + str_art +
@@ -1050,30 +1359,40 @@ class _UiSearch(QWidget):
             sql_text += " and (" + str_ringer + ")"
         self.search_ui.PRGB_dav.setValue(0)
         self.search_ui.PRGB_dav.setFormat("Auslesen der Datenbank ... %p%")
-        df = pd.read_sql(sql_text, engine)
-        self.search_ui.PRGB_dav.setValue(100)
+        try:
+            df = pd.read_sql(sql_text, engine)
+        except Exception as excp:
+            rberi_lib.QMessageBoxB('ok', 'Auslesen der Datenbank fehlgeschlagen.', 'Datenbankfehler', str(excp)).exec_()
+            return
+
+        self.search_ui.PRGB_dav.setValue(self.search_ui.PRGB_dav.maximum())
         if df.empty:
             rberi_lib.QMessageBoxB('ok', 'Keine Daten im abgegrenzten Zeitraum gefunden.',
                                    'Datenfehler').exec_()
             return
 
-        counter = 0
-        if self.search_ui.CHB_erstfang.isChecked():
-            counter += 1
-        if self.search_ui.CHB_alle_faenge.isChecked():
-            counter += 1
-        if self.search_ui.CHB_median.isChecked():
-            counter += 1
-        if self.search_ui.CHB_normiert.isChecked():
-            if self.search_ui.CHB_alle_faenge.isChecked():
-                counter += 1
-            if self.search_ui.CHB_erstfang.isChecked():
-                counter += 1
+        self.search_ui.TBL_ergebnis.clearContents()
+        # beim togglen der 'Summen anzeigen' CHB wird geschaut, ob es einen df_current gibt, der angezeigt werden kann. dieser
+        # wird erzeugt/gespeichert wenn man die SUmmen einschaltet. So muss beim Ausschalten nicht die ganze DB-Abfrage erneut
+        # stattfinden sondern nur der gespeicherte df wieder in die Tabelle geschrieben werden. Wenn aber neu angezeigt wird, also
+        # diese Funktion aufgerufen wird, muss diese Variable wieder resetet werden.
+        self.df_current = None
+        # ebenso wird die Summe ausgeschaltet, sollte sie eingeschaltet sein. Dafür muss die Verbindung zur Toggle-Funktion
+        # aus und danach wieder eingeschaltet werden.
+        self.search_ui.CHB_zeilendiff_summen.toggled.disconnect()
+        self.search_ui.CHB_zeilendiff_summen.setChecked(False)
+        self.search_ui.CHB_zeilendiff_summen.toggled.connect(self.zeilensummen)
 
         self.search_ui.PRGB_dav.setValue(0)
         self.search_ui.PRGB_dav.setFormat("Daten sammeln & formatieren ... %p%")
-        self.df_ergebnis = self.__get_complex_df(df, 100 / self.search_ui.TREE_arten.topLevelItemCount())
-        self.search_ui.PRGB_dav.setValue(100)
+        if bd.get_debug():
+            print(f"PRGB_dav.maximum = {self.search_ui.PRGB_dav.maximum()}, anzahl topLevelItem ="
+                  f"{self.search_ui.TREE_arten.topLevelItemCount()}")
+            print(f"ergibt frame = {self.search_ui.PRGB_dav.maximum() / self.search_ui.TREE_arten.topLevelItemCount()}")
+        self.df_ergebnis = self.__get_complex_df(df,
+                                                 self.search_ui.PRGB_dav.maximum() /
+                                                 self.search_ui.TREE_arten.topLevelItemCount())
+        self.search_ui.PRGB_dav.setValue(self.search_ui.PRGB_dav.maximum())
 
         self.search_ui.TBL_ergebnis.setHorizontalHeaderItem(0, QTableWidgetItem("Art"))
 
@@ -1101,76 +1420,28 @@ class _UiSearch(QWidget):
                                                         QTableWidgetItem(str(new_value)))
                     row_count_ -= 1
 
-
-
-        """i = 0
-        row_c = 0
-        while i < self.search_ui.TREE_arten.topLevelItemCount():
-            self.search_ui.PRGB_dav.setValue(int(i / self.search_ui.TREE_arten.topLevelItemCount() * 100))
-            self.search_ui.PRGB_dav.repaint()
-            self.search_ui.TBL_ergebnis.repaint()
-            art1 = self.search_ui.TREE_arten.topLevelItem(i).text(1)
-            df_art = df.loc[df['art'] == art1]
-            if df_art.empty:
-                self.search_ui.TBL_ergebnis.setRowCount(self.search_ui.TBL_ergebnis.rowCount() - counter)
-                i += 1
-                continue
-            self.df_ergebnis = self.__get_complex_df(df_art, 100 / self.search_ui.TREE_arten.topLevelItemCount())
-
-            self.search_ui.TBL_ergebnis.setHorizontalHeaderItem(0, QTableWidgetItem("Art"))
-
-            # hier werden die Überschriften der Reihen generiert: (Art + Typ der Daten {Estfang; alle Fänge; Median}
-            row_count = 0
-            for idx in self.df_ergebnis.index:
-                self.search_ui.TBL_ergebnis.setItem(row_c, 0, QTableWidgetItem(idx))
-                row_c += 1
-                row_count += 1
-
-            if not self.df_ergebnis.empty:
-                col_count = 0
-                self.search_ui.TBL_ergebnis.setColumnCount(len(self.df_ergebnis.columns) + 1)
-                for (colname, colval) in self.df_ergebnis.items():
-                    col_count += 1
-                    row_count_ = row_count
-                    self.search_ui.TBL_ergebnis.setHorizontalHeaderItem(col_count, QTableWidgetItem(colname))
-                    for row_value in colval:
-                        try:
-                            new_value = int(row_value)
-                        except ValueError:
-                            new_value = row_value
-                        self.search_ui.TBL_ergebnis.setItem(row_c - row_count_, col_count,
-                                                            QTableWidgetItem(str(new_value)))
-                        row_count_ -= 1
-            i += 1"""
-
-        self.search_ui.PRGB_dav.setValue(100)
+        self.search_ui.PRGB_dav.setValue(self.search_ui.PRGB_dav.maximum())
 
         if self.search_ui.CHB_all_col_del.isChecked():
             col2del = []
 
             for col in range(0, self.search_ui.TBL_ergebnis.columnCount()):
                 all_zero = 0
-                # all____ = 0
-
                 for row_value in range(0, self.search_ui.TBL_ergebnis.rowCount()):
                     if isinstance(self.search_ui.TBL_ergebnis.item(row_value, col), type(None)):
                         continue
                     item_txt = self.search_ui.TBL_ergebnis.item(row_value, col).text()
                     if item_txt != "0" and item_txt != "---":
                         all_zero += 1
-                    # if self.search_ui.TBL_ergebnis.item(row, col).text() != "---":
-                    #    all____ += 1
                 if all_zero == 0:
                     col2del.append(self.search_ui.TBL_ergebnis.horizontalHeaderItem(col).text())
-                # if all____ == 0:
-                #    col2del.append(self.search_ui.TBL_ergebnis.horizontalHeaderItem(col).text())
             zaehler = 0
             col_c = self.search_ui.TBL_ergebnis.columnCount()
             self.search_ui.PRGB_dav.setValue(0)
             self.search_ui.PRGB_dav.setFormat("Spaltenbereinigung läuft ... %p%")
             self.search_ui.PRGB_dav.setAlignment(Qt.AlignCenter)
             while zaehler < col_c:
-                percentage_per_col = 100 / col_c
+                percentage_per_col = self.search_ui.PRGB_dav.maximum() / col_c
                 if isinstance(self.search_ui.TBL_ergebnis.horizontalHeaderItem(zaehler), type(None)):
                     zaehler += 1
                     continue
@@ -1180,11 +1451,45 @@ class _UiSearch(QWidget):
                     zaehler -= 1
                 zaehler += 1
         self.search_ui.PRGB_dav.setFormat("%p%")
-        self.search_ui.PRGB_dav.setValue(100)
+        self.search_ui.PRGB_dav.setValue(self.search_ui.PRGB_dav.maximum())
         self.search_ui.PRGB_dav.setAlignment(Qt.AlignRight)
         self.search_ui.TBL_ergebnis.resizeColumnsToContents()
+        self.search_ui.TBL_ergebnis.setSortingEnabled(True)
 
-    def get_table_as_df(self):
+    def zeilensummen(self):
+        if not self.search_ui.CHB_zeilendiff_summen.isChecked():
+            if isinstance(self.df_current, type(None)) or self.df_current.empty:
+                self.__show()
+            else:
+                self.write_df_to_qtable_result(self.df_current, self.search_ui.TBL_ergebnis)
+        else:
+            self.df_current = self.get_table_as_df(only_copy=True)
+            self.search_ui.TBL_ergebnis.setRowCount(0)
+            self.search_ui.TBL_ergebnis.setRowCount(1)
+            self.search_ui.TBL_ergebnis.setItem(0, 0, QTableWidgetItem("ZZ Summe"))
+            colcnt = 1
+            for col, ser in self.df_current.items():
+                self.search_ui.TBL_ergebnis.setItem(0, colcnt, QTableWidgetItem(str(ser.sum())))
+                colcnt += 1
+
+    def write_df_to_qtable_result(self, df: pd.DataFrame, table: QTableWidget):
+        if self:
+            pass
+
+        table.setRowCount(df.shape[0])
+        table.setColumnCount(df.shape[1] + 1)
+        headers = ["Art"]
+        for el in df.columns.to_list():
+            headers.append(el)
+        table.setHorizontalHeaderLabels(headers)
+        row = 0
+        for ind, ser in df.iterrows():
+            table.setItem(row, 0, QTableWidgetItem(str(ind)))
+            for col in range(1, table.columnCount()):
+                table.setItem(row, col, QTableWidgetItem(str(ser[col - 1])))
+            row += 1
+
+    def get_table_as_df(self, **kwargs):
         number_of_rows = self.search_ui.TBL_ergebnis.rowCount()
         number_of_columns = self.search_ui.TBL_ergebnis.columnCount()
         items = []
@@ -1194,8 +1499,15 @@ class _UiSearch(QWidget):
             columns=items,  # Fill columns
             index=range(number_of_rows)  # Fill rows
         )
+
+        copymode = False
+        if kwargs:
+            for kwarg in kwargs:
+                if kwarg == 'only_copy':
+                    copymode = kwargs[kwarg]
+
         for i in range(number_of_rows):
-            if self.search_ui.TBL_ergebnis.item(i, 0) is None:
+            if self.search_ui.TBL_ergebnis.item(i, 0) is None and not copymode:
                 self.search_ui.TBL_ergebnis.removeRow(i)
                 continue
             for j in range(number_of_columns):
@@ -1215,9 +1527,12 @@ class _UiSearch(QWidget):
                             tmp_df.iloc[i, j] = self.search_ui.TBL_ergebnis.item(i, j).text()
                         else:
                             tmp_df.iloc[i, j] = None
-                        print(f"Exception: {excp}")
+                        if bd.get_debug():
+                            if bd.get_debug():
+                                print(f"Exception: {excp}")
 
         tmp_df = tmp_df.set_index([tmp_df.columns[0]])
+
         return tmp_df
 
     def export(self):
@@ -1294,18 +1609,20 @@ class _UiSearch(QWidget):
                                 ax.annotate(r, xy=(d, l),
                                             xytext=(-3, np.sign(l) * 3), textcoords="offset points",
                                             horizontalalignment="right",
-                                            verticalalignment="bottom" if l > 0 else "top")
+                                            verticalalignment="bottom" if l > 0 else "top",
+                                            size=15)
                         elif self.search_ui.RAD_kuchen.isChecked() and pie_ok:
                             ax.pie(values, labels=label)
                         elif self.search_ui.RAD_kuchen.isChecked() and not pie_ok:
-                            rberi_lib.QMessageBoxB('ok', 'Kuchendiagramme funktionieren nur, wenn es entweder nur eine Spalte '
-                                                         'oder nur eine Reihe gibt. Sonst wirds unübersichtlich.', 'Kein Kuchen :(',
-                                                   [f"Reihen = {df_trans.shape[0]}", f"Spalten = {df_trans.shape[1]}"]).exec_()
+                            rberi_lib.QMessageBoxB('ok', 'Kuchendiagramme funktionieren nur, wenn es entweder nur eine '
+                                                         'Spalte oder nur eine Reihe gibt. Sonst wirds unübersichtlich.',
+                                                   'Kein Kuchen :(',
+                                                   [f"Reihen = {df_trans.shape[0]}",
+                                                    f"Spalten = {df_trans.shape[1]}"]).exec_()
                             return
 
                         ax.yaxis_date()
                         ax.set_ylim(min(values_dates_new) - 10, max(values_dates_new) + 10)
-
                         multiplier += 1
                     else:
                         if self.search_ui.RAD_balken_vert.isChecked():
@@ -1321,14 +1638,15 @@ class _UiSearch(QWidget):
                                 ax.annotate(r, xy=(d, l),
                                             xytext=(-3, np.sign(l) * 3), textcoords="offset points",
                                             horizontalalignment="right",
-                                            verticalalignment="bottom" if l > 0 else "top")
+                                            verticalalignment="bottom" if l > 0 else "top", size=15)
                         elif self.search_ui.RAD_kuchen.isChecked() and pie_ok:
                             print(values.tolist())
                             print(values.index.tolist())
                             ax.pie(values.tolist(), labels=values.index.tolist(), autopct='%1.1f%%')
                         elif self.search_ui.RAD_kuchen.isChecked() and not pie_ok:
-                            rberi_lib.QMessageBoxB('ok', 'Kuchendiagramme funktionieren nur, wenn es entweder nur eine Spalte '
-                                                         'oder nur eine Reihe gibt. Sonst wirds unübersichtlich.', 'Kein Kuchen :(',
+                            rberi_lib.QMessageBoxB('ok', 'Kuchendiagramme funktionieren nur, wenn es entweder nur eine '
+                                                         'Spalte oder nur eine Reihe gibt. Sonst wirds unübersichtlich.',
+                                                   'Kein Kuchen :(',
                                                    [f"Reihen = {df_trans.shape[0]}", f"Spalten = {df_trans.shape[1]}"]).exec_()
 
                         if self.search_ui.CHB_trendlinie.isChecked():
@@ -1340,11 +1658,11 @@ class _UiSearch(QWidget):
 
                 if not self.search_ui.RAD_kuchen.isChecked():
                     ax.grid(visible=True, which='major', axis='both')
-                    ax.set_ylabel('Anzahl')
+                    ax.set_ylabel('Anzahl', size=15)
                     xtick_vals = tuple(df.columns.tolist())
-                    ax.set_title('Anzahl zwischen ' + xtick_vals[0] + ' und ' + xtick_vals[-1])
+                    ax.set_title('Anzahl zwischen ' + xtick_vals[0] + ' und ' + xtick_vals[-1], size=25)
                     ax.set_xticks(x + width, xtick_vals, rotation=45)
-                    ax.tick_params(axis='both', labelsize=7)
+                    ax.tick_params(axis='both', labelsize=15)
 
                     anz_label = self.search_ui.TBL_ergebnis.rowCount()
                     labels = df.index.tolist()
@@ -1356,17 +1674,33 @@ class _UiSearch(QWidget):
                             new_labels.append(label)
                             new_labels.append(label + " (Trend)")
 
+                    fsize = 'x-large'
+                    if len(new_labels) > 10:
+                        fsize = 'large'
+                    elif len(new_labels) > 15:
+                        fsize = 'medium'
+                    elif len(new_labels) > 20:
+                        fsize = 'small'
                     ax.legend(loc='upper left',
                               ncols=anz_label,
                               labels=new_labels,
-                              fontsize='large', )  # xx-small, x-small, small, medium, large, x-large, xx-large
+                              fontsize=fsize, )  # xx-small, x-small, small, medium, large, x-large, xx-large
                 else:
+                    new_labels = df_trans.index.tolist()
+                    fsize = 'x-large'
+                    if len(new_labels) > 10:
+                        fsize = 'large'
+                    elif len(new_labels) > 15:
+                        fsize = 'medium'
+                    elif len(new_labels) > 20:
+                        fsize = 'small'
                     ax.legend(loc='upper left',
                               ncols=df_trans.shape[0],
-                              labels=df_trans.index.tolist(),
-                              fontsize='large',
+                              labels=new_labels,
+                              fontsize=fsize,
                               title=df.index[0] + ' im Zeitraum ' + self.search_ui.DTE_von.date().toString() + " - " +
-                                    self.search_ui.DTE_bis.date().toString())
+                                    self.search_ui.DTE_bis.date().toString(),
+                              )
 
                 plt.show()
 
@@ -1379,10 +1713,6 @@ class _UiSearch(QWidget):
                 rberi_lib.QMessageBoxB('ok', 'Keine Grafik anzeigbar. Siehe Details.', 'Grafikfehler',
                                        str(excp)).exec()
                 return
-
-    def set_season_limits(self):
-        self.search_ui.DTE_von.setDate(QDate(self.search_ui.DTE_von.date().year(), 6, 30))
-        self.search_ui.DTE_bis.setDate(QDate(self.search_ui.DTE_von.date().year(), 11, 7))
 
 
 class _UiDatenblatt2(QDialog):
@@ -2313,8 +2643,9 @@ class _UiSearchItem(QDialog):
         self.ui.LBL_progress.setText("Fortschritt:")
         self.ui.progressBar.setValue(1000)
 
-        print(matrix2mark)
-        print(df_to_add_to_table)
+        if bd.get_debug():
+            print(matrix2mark)
+            print(df_to_add_to_table)
 
         write_df_to_qtable(df_to_add_to_table, self.ui.TBL_results, matrix2mark)
         self.ui.TBL_results.sortByColumn(2, Qt.AscendingOrder)
@@ -2420,6 +2751,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Geier")
+
         self.current_user = user_internal
         self.cancel = 0
         self.df_ringer = pd.DataFrame({})
@@ -2428,13 +2760,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ringnummern_laenge = self.get_defaults()
         self.berechtigung_beringer_speichern = 'nok'  # wird später bei der Anmeldung abgefragt und im Zweifel geändert
         self.alt_pressed = False
-        # klappt nicht mit dem dunklen Schema (da dann weiß auf weiß bei der alternierenden Zeile)
-        self.ui.TBL_wiederfaenge.setAlternatingRowColors(False)
-
-        self.ui.TBL_wiederfaenge.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        for i in range(self.ui.TBL_wiederfaenge.columnCount() - 2):
-            self.ui.TBL_wiederfaenge.horizontalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
-
         self.df_defaults = self.get_defaults()
         self.edit_status = False
         self.stunde = None
@@ -2460,6 +2785,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.teilfeder = -1
         self.fluegellaenge = -1
         self.masse = -1
+        self.zoom_seitenbreite = bd.get_zoom_seitenbreite()
+        self.no_click = None
 
         self.db2 = {}
         self.oot = {}  # das ist ein Dictionary, welches die Eingaben für Flügellänge/Teilfeder/Masse speichert,
@@ -2468,11 +2795,27 @@ class MainWindow(QtWidgets.QMainWindow):
         # werden.
 
         self.ui.widgetEingabe.setVisible(False)
-
         self.ui.CMB_art.setEnabled(False)
         self.ui.CMB_fangart.setEnabled(False)
         self.ui.INP_ringnummer.setEnabled(False)
 
+        self.__connect()
+        self.__set_validators()
+        self.__set_stylesheet()
+
+        try:
+            self.handle_user_level()
+        except Exception as excp:
+            raise excp
+
+        # klappt nicht mit dem dunklen Schema (da dann weiß auf weiß bei der alternierenden Zeile)
+        self.ui.TBL_wiederfaenge.setAlternatingRowColors(False)
+
+        self.ui.TBL_wiederfaenge.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        for i in range(self.ui.TBL_wiederfaenge.columnCount() - 2):
+            self.ui.TBL_wiederfaenge.horizontalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
+
+    def __connect(self):
         # alle Menu-Einträge werden hier verbunden mit den internen Funktionen.
         self.ui.actionArten.triggered.connect(self.show_artverwaltung)
         self.ui.actionBeenden.triggered.connect(lambda: self.programm_beenden(txt="über Datei -> Beenden oder Strg+Q"))
@@ -2487,7 +2830,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionEintrag_suchen.triggered.connect(self.search_item_ringnb)
         self.ui.actionWalinder.triggered.connect(self.walinder)
         self.ui.actionAktueller_Status.triggered.connect(self.aktueller_status)
+        self.ui.action_ueber_geier.triggered.connect(GeierStates.ueber_geier)
+        self.ui.actionFeedback.triggered.connect(lambda: self.feedback('feedback'))
+        self.ui.actionKontakt.triggered.connect(lambda: self.feedback('kontakt'))
 
+        # shortcuts
         # mit dem Shortcut Ctrl+Q kann man das Programm beenden (es wird die entsrepcehnde Funtion die mit dem
         # Menu "Beenden" verbunden ist, aufgerufen, sodass dort die Überprüfung stattfinden kann, ob überhaupt
         # quittiert werden darf)
@@ -2509,7 +2856,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.BTN_bemerkung.clicked.connect(self.add_bemerkung)
         self.ui.BTN_next_img.clicked.connect(self.next_pic_clicked)
         self.ui.BTN_prev_img.clicked.connect(self.prev_pic_clicked)
+        self.ui.BTN_snapshot.clicked.connect(self.snapshot)
+        self.ui.BTN_kamera_testen.clicked.connect(self.kameratest)
 
+        # ComboBoxen
         # Alle Aktionen die mit den ComboBoxen und der Liste verknüpft sind
         # damit beim Initialisieren nicht ständig doppelt abgefragt wird und v.a. die Ringnummer nicht
         # generiert wird, verknüpfen wir das hier erst, wenn fertig.
@@ -2525,7 +2875,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CMB_fach.editTextChanged.connect(self.changed)
         self.ui.CMB_fett.currentIndexChanged.connect(self.changed_index)
         self.ui.CMB_muskel.currentIndexChanged.connect(self.changed_index)
-        # self.ui.CMB_alter.currentIndexChanged.connect(self.changed_index)
         self.ui.CMB_alter.currentIndexChanged.connect(self.check_age)
         self.ui.CMB_sex.currentIndexChanged.connect(self.changed_index)
         self.ui.CMB_mauser1.currentIndexChanged.connect(self.changed_index)
@@ -2533,27 +2882,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CMB_mauser2.currentTextChanged.connect(self.m2changed)
         self.ui.CMB_mauser3.currentIndexChanged.connect(self.changed_index)
         self.ui.CMB_fangart.currentIndexChanged.connect(self.changed_index)
-
         self.ui.CMB_verletzungscode.currentIndexChanged.connect(self.changed_index)
+
         # Listen:
         self.ui.LST_letzte_beringer.itemDoubleClicked.connect(self.beringer_aus_liste)
+
         # LineEdits' (Ringnummer, Teilfeder, Flügellänge, Masse)
         self.ui.INP_ringnummer.editingFinished.connect(self.ringnumber_edit_finished)
 
         self.ui.INP_teilfeder.returnPressed.connect(self.focusNextChild)
-        self.ui.INP_teilfeder.installEventFilter(self)
+        self.ui.INP_teilfeder.editingFinished.connect(lambda: self.teilfeder_editing_finished('teilfeder'))
+        # self.ui.INP_teilfeder.installEventFilter(self)
         self.ui.INP_fluegellaenge.returnPressed.connect(self.focusNextChild)
-        self.ui.INP_fluegellaenge.installEventFilter(self)
+        self.ui.INP_fluegellaenge.editingFinished.connect(lambda: self.teilfeder_editing_finished('fluegel'))
+        # self.ui.INP_fluegellaenge.installEventFilter(self)
         self.ui.INP_masse.returnPressed.connect(self.focusNextChild)
-        self.ui.INP_masse.installEventFilter(self)
+        self.ui.INP_masse.editingFinished.connect(lambda: self.teilfeder_editing_finished('masse'))
+        # self.ui.INP_masse.installEventFilter(self)
 
         self.ui.INP_teilfeder_2.editingFinished.connect(self.kerbe_edit_finished)
         self.ui.INP_masse.editingFinished.connect(self.focus_next)
-
-        try:
-            self.handle_user_level()
-        except Exception as excp:
-            raise excp
 
         self.ui.CMB_art.installEventFilter(self)
         self.ui.CMB_fangart.installEventFilter(self)
@@ -2591,6 +2939,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CMB_zentrale.installEventFilter(self)
         self.ui.CMB_station.installEventFilter(self)
 
+        self.ui.CMB_camera_source.addItems(['0', '1', '2', '3', '4'])
+        self.ui.CMB_camera_source.setCurrentIndex(0)
+
         self.ui.INP_teilfeder.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.INP_teilfeder.customContextMenuRequested.connect(lambda: self.rightClickFunction("teilfederlaenge"))
         self.ui.INP_fluegellaenge.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -2603,6 +2954,43 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.GRA_view.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         self.ui.GRA_view.setOptimizationFlags(QGraphicsView.DontAdjustForAntialiasing)
 
+    def __set_validators(self):
+        validator = QtGui.QRegularExpressionValidator()
+        validator.setRegularExpression(QRegularExpression("[0-9]{0,4}|[0-9]{0,4}[.,]{1}[05]{1}"))
+        # ^[1-9]{0,4}$|^(?=\d+[.,][05]$).{3,6}
+        self.ui.INP_teilfeder.setValidator(validator)
+        self.ui.INP_fluegellaenge.setValidator(validator)
+        validator2 = QtGui.QRegularExpressionValidator()
+        validator2.setRegularExpression(QRegularExpression("[0-9]{0,2}[.,]{0,1}[0,5]{0,1}"))
+        self.ui.INP_teilfeder_2.setValidator(validator2)
+        validator3 = QtGui.QRegularExpressionValidator()
+        validator3.setRegularExpression(QRegularExpression("[0-9]{0,4}[.,]{0,1}[0-9]{0,1}"))
+        # ^[1-9]{0,4}$|^(?=\d+[.,]\d$).{3,6}
+        self.ui.INP_masse.setValidator(validator3)
+
+    def __set_stylesheet(self):
+        # qss = "./qss/Adaptic/Adaptic.qss"
+        # qss = "./qss/SpyBot/SpyBot.qss"
+        # qss = "./qss/MacOS.qss"
+        # qss = "./qss/Darkeum/Darkeum.qss"
+        # qss = "./qss/Diffnes/Diffnes.qss"
+        # qss = "./qss/Fibers/Fibers.qss"
+        # qss = "./qss/Gravira/Gravira.qss"
+        # qss = "./qss/Incrypt/Incrypt.qss"
+        # qss = "./qss/Integrid/Integrid.qss" #label müsste schwarz
+        # qss = "./qss/Irrorater/Irrorater.qss"
+        # qss = "./qss/Remover/Remover.qss"
+        # qss = "./qss/Integrid/Integrid.qss"
+        # qss = "./qss/Adaptic/Adaptic.qss"
+
+        qss = "./qss/Darkorange/darkorange.qss"
+
+        # qss = "./qss/Combinear/Combinear.qss"  # ==> bestes Dark Theme
+        app.setStyle("plastique")
+        with open(qss, "r") as fh:
+            self.centralWidget().setStyleSheet(fh.read())
+
+
     # ############################################################################################################################
     # ALLES RUND UM LOOK-AND-FEEL (key-press, events, mouse-over, mouse-action, rightclick, etc.
     # ############################################################################################################################
@@ -2612,7 +3000,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.fitInView(self.ui.GRA_view)
         QMainWindow.resizeEvent(self, event)
 
-    def wheelEvent(self, event):
+    def wheelEventQ(self, event):
         state = {
             'angleDelta': event.angleDelta(),
             'buttons': event.buttons(),
@@ -2663,25 +3051,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fluegellaenge = self.ui.INP_fluegellaenge.text()
             elif source.objectName() == 'INP_masse':
                 self.masse = self.ui.INP_masse.text()
-        elif event.type() == QEvent.FocusOut:
-            # print('filter-focus-out:', f"{source.objectName()}")
-            if source.objectName() == 'INP_teilfeder':
-                if self.ui.INP_teilfeder.text() != self.teilfeder:
-                    self.proof_gauss('teilfeder')
-            elif source.objectName() == 'INP_fluegellaenge':
-                if self.ui.INP_fluegellaenge.text() != self.fluegellaenge:
-                    self.proof_gauss('fluegel')
-            elif source.objectName() == 'INP_masse':
-                if self.ui.INP_masse.text() != self.masse:
-                    self.proof_gauss('gewicht')
 
-            if (source == self.ui.CMB_fach) and (len(self.ui.CMB_fach.currentText()) > 0):
+            """if (source == self.ui.CMB_fach) and (len(self.ui.CMB_fach.currentText()) > 0):
                 if len(self.ui.CMB_fach.currentText()) == 2:
                     self.ui.CMB_fach.setCurrentText(self.ui.CMB_fach.currentText().upper())
                 if self.ui.CMB_fach.currentText() not in [self.ui.CMB_fach.itemText(i) for i in
                                                           range(self.ui.CMB_fach.count())]:
                     self.ui.CMB_fach.setCurrentText("")
-                    self.ui.CMB_fach.setFocus()
+                    self.ui.CMB_fach.setFocus()"""
         elif event.type() == QEvent.KeyPress:
             if event.key() == QtCore.Qt.Key.Key_Alt:
                 self.alt_pressed = True
@@ -2710,6 +3087,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     return True
         return super().eventFilter(source, event)
 
+    def teilfeder_editing_finished(self, source):
+        if source == 'teilfeder':
+            if self.ui.INP_teilfeder.text() != self.teilfeder:
+                self.proof_gauss('teilfeder')
+        elif source == 'fluegel':
+            if self.ui.INP_fluegellaenge.text() != self.fluegellaenge:
+                self.proof_gauss('fluegel')
+        elif source == 'masse':
+            if self.ui.INP_masse.text() != self.masse:
+                self.proof_gauss('gewicht')
+
     def keyPressEvent(self, event: QEvent):
         # print(f"key pressed: {event.key()}")
         if event.key() == QtCore.Qt.Key.Key_Return:
@@ -2737,6 +3125,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def mouse_over_lbl(self, state):
         self.mouse_over_pic = state
+        if not self.ui.GRA_view.sceneRect():
+            return
+        if len(self.ui.GRA_view.items()) <= 0:
+            return
+
+        if state:
+            self.fitInView(self.ui.GRA_view)
+        else:
+            self.fitInView(self.ui.GRA_view)
+            self.ui.GRA_view.scale(0.1, 0.1)
 
     def rightClickFunction(self, source: str):
         info_kurztext = ":"
@@ -2887,7 +3285,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                    eintrag['email'] + "', anmerkung ='" + eintrag['anmerkung'] +
                                    "', zeige_wiederfaenge =" + str(eintrag['wiederfang']) + " WHERE vorname ='" +
                                    eintrag['vorname'] + "' AND nachname = '" + eintrag['nachname'] + "'")
-                        print(SQL_txt)
+                        if bd.get_debug():
+                            print(SQL_txt)
                         cursor = engine.cursor()
                         cursor.execute(SQL_txt)
                         engine.commit()
@@ -3066,25 +3465,55 @@ class MainWindow(QtWidgets.QMainWindow):
     # ALLES RUND UMS BILD
     # ############################################################################################################################
 
-    def fitInView(self, item: QGraphicsView):
-        rect = None
+    def fitInView(self, view: QGraphicsView, **kwargs):
+        firstload = False
+        if not isinstance(self.pic, QGraphicsPixmapItem):
+            return
+        if not isinstance(self.pic.pixmap(), QPixmap):
+            return
         try:
             rect = QtCore.QRectF(self.pic.pixmap().rect())
         except Exception as excp:
             rberi_lib.QMessageBoxB('ok', 'Es trat ein Fehler mit der Bilddarstellung auf. Bitte den Entwickler informieren und '
                                          'den genauen Fehlertext (siehe Details) mitteilen. Danke für die Mitarbeit!',
                                    'Bildfehler', str(excp)).exec_()
-        finally:
-            if not rect.isNull():
-                item.setSceneRect(rect)
-                unity = item.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
-                item.scale(1 / unity.width(), 1 / unity.height())
-                viewrect = item.viewport().rect()
-                scenerect = item.transform().mapRect(rect)
-                factor = min(viewrect.width() / scenerect.width(),
-                             viewrect.height() / scenerect.height())
-                item.scale(factor, factor)
-                self._zoom = 0
+            return
+
+        if kwargs:
+            for kw in kwargs:
+                if kw == 'modus':
+                    if kwargs[kw] == 'first':
+                        firstload = True
+
+        if not rect.isNull():
+            view.setSceneRect(rect)
+            unity = view.transform().mapRect(QtCore.QRectF(0, 0, 1, 1))
+            view.scale(1 / unity.width(), 1 / unity.height())
+            if bd.get_debug():
+                print(f"view.width = {view.width()}, view.height = {view.height()}")
+            viewrect = view.viewport().rect()
+            if bd.get_debug():
+                print(f"Viewport.rect(): w = {viewrect.width()}, h = {viewrect.height()}")
+            scenerect = view.transform().mapRect(rect)
+            if bd.get_debug():
+                print(f"scenerect.rect(): w = {scenerect.width()}, h = {scenerect.height()}")
+                print("Jetzt wird gezoomt .... ")
+            if self.zoom_seitenbreite:
+                factor = viewrect.width() / scenerect.width()
+            else:
+                factor = min(viewrect.width() / scenerect.width(), viewrect.height() / scenerect.height())
+            if bd.get_debug():
+                print(f"factor = {factor}")
+            view.scale(factor, factor)
+            if firstload:
+                view.scale(0.100, 0.100)
+            if bd.get_debug():
+                print(f"Zoom/Scale beendet ... ")
+                print(f"view.width = {view.width()}, view.height = {view.height()}")
+                print(f"Viewport.rect(): w = {viewrect.width()}, h = {viewrect.height()}")
+                print(f"scenerect.rect(): w = {scenerect.width()}, h = {scenerect.height()}")
+            view.centerOn(1, 1)
+            self._zoom = 0
 
     def load_img(self, filepath: str = ''):
         if filepath == '':
@@ -3093,10 +3522,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.img = QImage(filepath)
         self.pic = QGraphicsPixmapItem()
         self.pic.setPixmap(QPixmap.fromImage(self.img))
-        self.ui.GRA_view.setScene(self.scene)
         self.scene.clear()
         self.scene.addItem(self.pic)
-        self.fitInView(self.ui.GRA_view)
+        # openGLviewport = QOpenGLWidget()
+        # self.ui.GRA_view.setViewport(openGLviewport)
+        self.ui.GRA_view.setScene(self.scene)
+        self.ui.GRA_view.setRenderHints(QPainter.RenderHint.LosslessImageRendering |
+                                        QPainter.RenderHint.HighQualityAntialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+        # self.ui.GRA_view.setSceneRect(150, 150, 100, 100)
+        self.fitInView(self.ui.GRA_view, modus='first')
+        # self.ui.GRA_view.repaint()
         self._zoom = 0
 
     def set_list_of_picture_paths_of_dir(self) -> (str, list):
@@ -3122,7 +3557,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pic_list.append(os.path.join(dir_path, each_file))
         if len(self.pic_list) <= 0:
             return f"Keine Bilder für '{self.ui.CMB_art.currentText()}' gefunden.", []
-        print(self.pic_list)
+        if bd.get_debug():
+            print(self.pic_list)
         return "", self.pic_list
 
     def get_first_picture_of_dir(self) -> str:
@@ -3297,8 +3733,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
 
         elif fangart == "k":
-            rberi_lib.QMessageBoxB('ok', "Keine eigene Speicher-Routine festgelegt. Bitte über Wiederfang"
-                                         "'w' bearbeiten.", "", None).exec_()
+            a = rberi_lib.QMessageBoxB('yn', "Das Programm schlägt selbstständig vor, einen Wiederfang in einen "
+                                             "Kontrollfang zu ändern. Fremdfänge bitte über 'f' behandeln. Soll der Vorgang mit "
+                                             "Fangart 'w' fortgesetzt werden?", "Kontrollfang/Wiederfang", None).exec_()
+            if a == QMessageBox.Yes:
+                rnr = self.ui.INP_ringnummer.text()
+                self.ui.CMB_fangart.setCurrentText('w')
+                self.ui.INP_ringnummer.setText(rnr)
+            else:
+                a = rberi_lib.QMessageBoxB('yn', 'Bist Du ganz sicher, dass Du einen manuellen Kontrollfang speichern '
+                                                 'möchtest? Falls ja, bitte um Bestätigung. ', 'Kontrollfangspeicherung').exec_()
+                if a != QMessageBox.Yes:
+                    return
+            self.save_same_time()
+            return
+
         elif fangart == "f":
             self.ui.CMB_fangart.setCurrentText("k")
             self.save_procedure_raw('f')
@@ -3332,11 +3781,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     if (teilfeder[-1] != "5") and (teilfeder[-1] != "0"):
                         rberi_lib.QMessageBoxB('ok', 'Teilfeder: .0 oder .5!', 'Wertfehler').exec_()
                         self.ui.INP_teilfeder.setFocus(True)
+                        self.ui.INP_teilfeder.selectAll()
                         return
-                else:
-                    teilfeder = teilfeder + ".0"
                 if teilfeder[-1] == ".":
-                    teilfeder = teilfeder[:len(teilfeder) - 1]
+                    teilfeder += "0"
                 try:
                     float(teilfeder)
                 except ValueError:
@@ -3353,11 +3801,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     if (fluegel[-1] != "5") and (fluegel[-1] != "0"):
                         rberi_lib.QMessageBoxB('ok', 'Flügellänge: .0 oder .5!', 'Wertfehler').exec_()
                         self.ui.INP_fluegellaenge.setFocus(True)
+                        self.ui.INP_fluegellaenge.selectAll()
                         return
-                else:
-                    fluegel = fluegel + ".0"
                 if fluegel[-1] == ".":
-                    fluegel = fluegel[:len(fluegel) - 1]
+                    fluegel += "0"
                 try:
                     float(fluegel)
                 except ValueError:
@@ -3371,10 +3818,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 masse = masse.replace(",", ".")
                 if masse.find(".") > 0:
                     masse = masse[:masse.find(".") + 2]
-                else:
-                    masse = masse + ".0"
                 if masse[-1] == ".":
-                    masse = masse[:len(masse) - 1]
+                    masse += "0"
                 try:
                     float(masse)
                 except ValueError:
@@ -3389,10 +3834,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 _kerbe = _kerbe.replace(",", ".")
                 if _kerbe.find(".") > 0:
                     _kerbe = _kerbe[:_kerbe.find(".") + 2]
-                else:
-                    _kerbe = _kerbe + ".0"
                 if _kerbe[-1] == ".":
-                    _kerbe = _kerbe[:len(_kerbe) - 1]
+                    _kerbe += "0"
                 try:
                     float(_kerbe)
                 except ValueError:
@@ -3515,11 +3958,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 sql_text += str(_kerbe) + ", (Null), (Null), (Null), (Null), "
             sql_text += str(datetime.today().year)
             sql_text += ")"
-            print(f"{sql_text}")
+            if bd.get_debug():
+                print(f"{sql_text}")
 
             # generierte Ringnummer zurücksetzen für nächsten Erstfang.
 
-            if fangart != 'f':
+            if fangart == 'e':
                 rings, ringn, ringn_int = self.get_ringnr_separated(self.ui.INP_ringnummer.text())
                 lastnum = -1
                 try:
@@ -3533,7 +3977,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                            f'lastnum = {lastnum}\n\nBitte Entwickler kontaktieren!',
                                            'Fehler!', f'Exception = {excp}').exec_()
                     return False
-
                 if (ringn_int >= 0) and (lastnum == ringn_int - 1):
                     new_nmb, msg_text = ringserienverwaltung.increment_last_nr(engine, ringtypref=None, ringserie=rings)
                     if new_nmb == -1:
@@ -3762,11 +4205,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if len(fehlertext) > 0:
                 self.ui.statusbar.showMessage(fehlertext, 10000)
+                self.ui.BTN_pic.setEnabled(False)
+                self.scene.clear()
             else:
                 self.ui.statusbar.showMessage(f"Anzahl Bilder: {len(list_of_pics)}", 5000)
-
-            self.ui.BTN_pic.setEnabled(True)
-            self.load_img(self.get_first_picture_of_dir())
+                self.ui.BTN_pic.setEnabled(True)
+                self.load_img(self.get_first_picture_of_dir())
 
             if len(self.ui.INP_ringnummer.text()) >= 0:
                 self.ui.CMB_fangart.setCurrentIndex(-1)
@@ -3818,10 +4262,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionBeringer.trigger()
 
     def beringer_aus_liste(self, wi):
-        print(self.ui.CMB_beringer.count())
-        print(f"wi = {wi.text()}")
+        if bd.get_debug():
+            print(self.ui.CMB_beringer.count())
+            print(f"wi = {wi.text()}")
         for i in range(self.ui.CMB_beringer.count()):
-            print(f"CMB_beringer.itemText({i}) = {self.ui.CMB_beringer.itemText(i)}")
+            if bd.get_debug():
+                print(f"CMB_beringer.itemText({i}) = {self.ui.CMB_beringer.itemText(i)}")
             if self.ui.CMB_beringer.itemText(i) == wi.text():
                 self.ui.CMB_beringer.setCurrentIndex(i)
         self.ui.CMB_beringer.setCurrentText(wi.text())
@@ -3835,9 +4281,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
         if self.ui.LST_letzte_beringer.count() > 4:
             for i in range(4, 0, -1):
-                print(i)
+                if bd.get_debug():
+                    print(i)
                 self.ui.LST_letzte_beringer.item(i).setText(self.ui.LST_letzte_beringer.item(i - 1).text())
-                print("item(i) = " + self.ui.LST_letzte_beringer.item(i).text())
+                if bd.get_debug():
+                    print("item(i) = " + self.ui.LST_letzte_beringer.item(i).text())
                 # self.ui.LST_letzte_beringer.item(0).setText(cur_ringer)
             self.ui.LST_letzte_beringer.item(0).setText(cur_ringer)
         elif self.ui.LST_letzte_beringer.count() == 0:
@@ -3957,6 +4405,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def check_age(self):
         age = self.ui.CMB_alter.currentText()
+        if age in ['1', '3']:
+            self.ui.CMB_mauser2.setEnabled(True)
+        else:
+            self.ui.CMB_mauser2.setCurrentIndex(-1)
+            self.ui.CMB_mauser2.setEnabled(False)
+
         fangart = self.ui.CMB_fangart.currentText()
         if fangart == 'e':
             if age in ['', '0', '1', '2', '3', '4', 0, 1, 2, 3, 4]:
@@ -4309,11 +4763,34 @@ class MainWindow(QtWidgets.QMainWindow):
         if get_connection_status(engine):
             return pd.read_sql("SELECT * FROM defaults", engine)
 
-    def changed(self, txt):
-        print(self.ui.CMB_fach.currentText())
-        print(self.ui.CMB_fach.currentIndex())
-        if (len(txt) == 2) and not self.ui.CMB_fett.hasFocus():
-            self.focusNextChild()
+    def changed(self, txt: str):
+        if bd.get_debug():
+            print(self.ui.CMB_fach.currentText())
+            print(self.ui.CMB_fach.currentIndex())
+        if len(txt) < 2:
+            return
+        if self.ui.CMB_netz.findText(txt) >= 0 and self.ui.CMB_netz.hasFocus():
+            self.ui.CMB_fach.setFocus()
+            return
+        elif self.ui.CMB_netz.findText(txt) < 0 and self.ui.CMB_netz.hasFocus():
+            # self.ui.CMB_netz.lineEdit().selectAll()
+            self.ui.CMB_netz.lineEdit().clear()
+            return
+        else:
+            if self.ui.CMB_fach.hasFocus():
+                if self.ui.CMB_fach.findText(txt) >= 0:
+                    self.ui.CMB_fett.setFocus()
+                else:
+                    txt = txt.upper()
+                    if self.ui.CMB_fach.findText(txt) >= 0:
+                        self.ui.CMB_fach.setCurrentText(txt)
+                        self.ui.CMB_fett.setFocus()
+                        return
+                    else:
+                        self.ui.CMB_fach.lineEdit().clear()
+
+        # if (len(txt) == 2) and not self.ui.CMB_fett.hasFocus():
+        #    self.focusNextChild()
 
     def m2changed(self, t):
         if t == "/":
@@ -4412,7 +4889,8 @@ class MainWindow(QtWidgets.QMainWindow):
         df_stationen = df.sort_values(by='Name')
         if self.ui.CMB_station.count() <= 0:
             self.ui.CMB_station.addItems(df_stationen['Name'])
-        print(self.df_defaults['Station'])
+        if bd.get_debug():
+            print(self.df_defaults['Station'])
         self.ui.CMB_station.setCurrentText(df_stationen.at[df_stationen[df_stationen['stationenID'] ==
                                                                         self.df_defaults.loc[0].at[
                                                                             'Station']].index.item(), 'Name'])
@@ -4484,7 +4962,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 kuerzel_neu = nachname[0:i].upper() + vorname[0:i + 1].upper()
         if i >= 10:
             kuerzel_neu = "ungueltig"
-        print(kuerzel_neu)
+        if bd.get_debug():
+            print(kuerzel_neu)
         return kuerzel_neu
 
     def check_same_art(self, art1, art2) -> list:
@@ -4500,12 +4979,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if index1 == index2:
             return_list = [True, df_arten.loc[index1, 'deutsch'], df_arten.loc[index1, 'lateinisch'],
                            df_arten.loc[index1, 'englisch'], df_arten.loc[index1, 'esf_kurz']]
-            print(return_list)
+            if bd.get_debug():
+                print(return_list)
             return return_list
         else:
             return_list = [False, df_arten.loc[index1, 'deutsch'], df_arten.loc[index2, 'deutsch'],
                            df_arten.loc[index1, 'esf_kurz'], df_arten.loc[index2, 'esf_kurz']]
-            print(return_list)
+            if bd.get_debug():
+                print(return_list)
             return return_list
 
     def abmelden(self):
@@ -4520,7 +5001,8 @@ class MainWindow(QtWidgets.QMainWindow):
         logout("Abmelden über Menü aufgerufen")
         login_form = Loginpage(df_benutzer, current_u)
         result = login_form.exec_()
-        print(result)
+        if bd.get_debug():
+            print(result)
         if result == QtWidgets.QDialog.Accepted:
             self.handle_user_level()
         else:
@@ -4611,7 +5093,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                                  f'Mit "Ja/Yes" wird "Maße OK" im Bemerkungsfeld hinzugefügt. ',
                                            'Toleranzabfrage').exec_()
                 if a == QMessageBox.Yes:
-                    self.ui.PTE_bemerkung.appendPlainText('\nMaße OK')
+                    if len(self.ui.PTE_bemerkung.toPlainText()) > 0:
+                        self.ui.PTE_bemerkung.appendPlainText('\nMaße OK')
+                    else:
+                        self.ui.PTE_bemerkung.setPlainText('Maße OK')
                     return True
                 else:
                     return False
@@ -4620,13 +5105,16 @@ class MainWindow(QtWidgets.QMainWindow):
                                                  f'Mit "Ja/Yes" wird "Maße OK" im Bemerkungsfeld hinzugefügt. ',
                                            'Toleranzabfrage').exec_()
                 if a == QMessageBox.Yes:
-                    self.ui.PTE_bemerkung.appendPlainText('\nMaße OK')
+                    if len(self.ui.PTE_bemerkung.toPlainText()) > 0:
+                        self.ui.PTE_bemerkung.appendPlainText('\nMaße OK')
+                    else:
+                        self.ui.PTE_bemerkung.setPlainText('Maße OK')
                     return True
                 else:
                     return False
         return True
 
-    def proof_gauss(self, source: str) -> None:
+    def proof_gauss(self, source: str) -> bool:
         """
 
         :param source: Automatismus bei 'teilfeder', 'fluegel' und 'gewicht'.
@@ -4667,22 +5155,19 @@ class MainWindow(QtWidgets.QMainWindow):
                     "quot": "quo_f3_flg_ex", "quot_s": "quo_f3_flg_s", "quot_d_min": "quo_f3_flg_d_neg",
                     "quot_d_max": "quo_f3_flg_d_pos", "show_g": "show_g_msg", "show_q": "show_q_msg"}
         else:
-            return
+            return True
 
         art_df = pd.read_sql('SELECT esf_kurz FROM arten WHERE deutsch = "' + self.ui.CMB_art.currentText() + '"',
                              engine)
         if art_df.empty:
-            return
+            return True
 
         self.art = art_df['esf_kurz'].iloc[0]
         if rberi_lib.check_float(self.eingabe_str):
             self.eingabe_str = self.eingabe_str.replace(",", ".")
             eingabe = float(self.eingabe_str)
         else:
-            # rberi_lib.QMessageBoxB('ok', f'"{self.eingabe_str}" ist keine Dezimalzahl.', 'Wertfehler').exec_()
-            _object.clear()
-            _object.setFocus(True)
-            return
+            return True
 
         try:
             df_vals = pd.read_sql('SELECT ' + vals['mw'] + ', ' + vals['stdab'] + ', ' + vals['faktor_min'] + ', ' +
@@ -4693,20 +5178,20 @@ class MainWindow(QtWidgets.QMainWindow):
             rberi_lib.QMessageBoxB('ok', 'Mittelwert und Standardabweichung konnten nicht '
                                          'ermittelt werden. Bitte Datenbankverbindung prüfen.', 'Fehler',
                                    str(excp)).exec_()
-            return
+            return True
 
         # wenn für diese Art keine Gewichtsabweichungen angezeigt werden sollen, wird hier die Bearbeitung
         # beendet.
         show_g_msg_txt = df_vals[vals['show_g']].iloc[0]
         if source == 'gewicht' and show_g_msg_txt == 0:
-            return
+            return True
 
         avg_df = df_vals[vals['mw']].iloc[0]
         if avg_df <= 0:
-            return
+            return True
         std_ab = df_vals[vals['stdab']].iloc[0]
         if std_ab <= 0:
-            return
+            return True
         faktor_min = df_vals[vals['faktor_min']].iloc[0]
         if faktor_min <= 0:
             faktor_min = 2
@@ -4755,7 +5240,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.oot['Masse'] = [eingabe]
 
-            _object.setFocus(True)
+            _object.setFocus()
+            _object.selectAll()
+            internal_marker = True
             # _object.setSelection(0, len(_object.text()))    BUGGY!
         else:
             if source == 'teilfeder':
@@ -4764,6 +5251,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.oot['Flügellänge'] = []
             elif source == 'gewicht':
                 self.oot['Masse'] = []
+            internal_marker = False
 
         if (rberi_lib.check_float(self.ui.INP_teilfeder.text()) and
                 rberi_lib.check_float(self.ui.INP_fluegellaenge.text()) and
@@ -4790,7 +5278,16 @@ class MainWindow(QtWidgets.QMainWindow):
                                         ]
                                        ).exec_()
                 _object.setFocus(True)
-                # _object.setSelection(0, len(_object.text()))   BUGGY!
+                _object.selectAll()
+                internal_marker = True
+
+        return internal_marker
+
+    def feedback(self, source: str):
+        if self:
+            pass
+        diag = Kontakt_Menu_GUI(source)
+        diag.exec_()
 
     def add_bemerkung(self):
         self.ui.PTE_bemerkung.setEnabled(True)
@@ -4805,6 +5302,122 @@ class MainWindow(QtWidgets.QMainWindow):
         rberi_lib.QMessageBoxB('ok', f'Verbindung zur Datenbank: {txt_db}\nAktueller Benutzer: {txt_user}\n'
                                      f'Berechtigungslevel (1: Eingabestatus, 2: Pflegestatus, 3: Adminstatus) = '
                                      f'{txt_level}\n', 'Aktueller Status').exec_()
+
+    def snapshot(self):
+        fehlertxt = ""
+        if self.ui.CMB_art.currentIndex() < 0:
+            fehlertxt += "Art"
+        beringer = self.ui.CMB_beringer.currentText()
+        if len(beringer) <= 0:
+            if len(fehlertxt) > 0:
+                fehlertxt += ", Beringer"
+            else:
+                fehlertxt += "Beringer"
+        ringnummer = self.ui.INP_ringnummer.text()
+        if len(ringnummer) <= 0:
+            if len(fehlertxt) > 0:
+                fehlertxt += ", Ringnummer"
+            else:
+                fehlertxt += "Ringnummer"
+
+        if len(fehlertxt) > 0:
+            rberi_lib.QMessageBoxB('ok', f'Folgende Daten fehlen: {fehlertxt}',
+                                   'Daten fehlen').exec_()
+            return
+
+        cam_port = int(self.ui.CMB_camera_source.currentText())
+
+        self.ui.statusbar.showMessage("Open Camera ... ", 30000)
+        cam = cv2.VideoCapture(cam_port)
+        if not cam.isOpened():
+            self.ui.statusbar.showMessage(f"Kann die Kamera nicht öffnen.", 3000)
+            return
+        self.ui.statusbar.showMessage(f"Camera opened ... ", 3000)
+
+        zeitstempel = datetime.now().strftime("%Y%m%d-%H%M%S")
+        art = self.ui.CMB_art.currentText()
+        art = art.replace("ä", "ae")
+        art = art.replace("ö", "oe")
+        art = art.replace("ü", "ue")
+        art = art.replace("ß", "ss")
+        beringer_list = beringer.split(",")
+        beringer_text = ""
+        for namepart in beringer_list:
+            beringer_text += namepart.strip().replace(" ", "")
+        _filename = art + "_" + ringnummer + "_" + beringer_text + "_" + zeitstempel + ".png"
+        _filename = self.get_defaults()['Bilderverzeichnis'].tolist()[0] + "/" + self.ui.CMB_art.currentText() + "/" + _filename
+        if bd.get_debug():
+            print(f"Art = {art}")
+            print(f"Beringer = {beringer_text}")
+            print(f"Zeitstempel = {zeitstempel}")
+            print(f"_filename: {_filename}")
+
+        image = None
+        while cv2.waitKey(1) != 32:
+            result, image = cam.read()
+            if not result:
+                self.ui.statusbar.showMessage(f"Kein Videostream der Kamera gefunden.", 3000)
+                return
+            cv2.imshow('Belegfoto', image)
+            # space is hit
+
+        if isinstance(image, np.ndarray) and image.size > 0:
+            cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            img_pil = Image.fromarray(cv2_im)
+            img_pil.save(_filename)
+            self.ui.PTE_bemerkung.appendPlainText("Belegfoto: " + _filename)
+            # cv2.imwrite(_filename, image)
+
+        # beliebige Taste beendet Fenster
+        cv2.waitKey(0)
+        try:
+            cam.release()
+            cv2.destroyWindow("Belegfoto")
+        except Exception as excp:
+            self.ui.statusbar.showMessage(f"Belegfoto-Fenster nicht mehr gefunden ... kein Handlungsbedarf! Excp: {excp}",
+                                          3000)
+
+    def kameratest(self):
+        def klick(event, x, y, z, argl):
+            if event == cv2.EVENT_LBUTTONDOWN:
+                self.no_click = False
+                print("LEFTCLICK! in Kameratest")
+
+        self.no_click = True
+        cam_port = int(self.ui.CMB_camera_source.currentText())
+        cam = cv2.VideoCapture(cam_port)
+        if not cam.isOpened():
+            a = rberi_lib.QMessageBoxB('yn', f"Kann die Kamera auf Slot {cam_port} nicht öffnen. Soll der nächste Slot "
+                                             f"getestet werden?", 'Kamerafehler').exec_()
+            if a == QMessageBox.Yes:
+                if self.ui.CMB_camera_source.currentIndex() < self.ui.CMB_camera_source.maxCount() - 2:
+                    self.ui.CMB_camera_source.setCurrentIndex(self.ui.CMB_camera_source.currentIndex())
+                    self.kameratest()
+                else:
+                    rberi_lib.QMessageBoxB('ok', 'Keine weiteren Slots gefunden.', 'Kamerafehler').exec_()
+            else:
+                return
+
+        result, image = cam.read()
+        if not result:
+            rberi_lib.QMessageBoxB('ok', f"Kein Videostream der Kamera gefunden. Stelle sicher, dass die Kamera im "
+                                         f"Videomodus ist.", 'Kamerafehler').exec_()
+            return
+
+        cv2.namedWindow('Kameratest')
+        cv2.setMouseCallback('Kameratest', klick)
+
+        while cv2.waitKey(1) < 0 and result and self.no_click:
+            result, image = cam.read()
+            cv2.imshow('Kameratest', image)
+
+        try:
+            cam.release()
+            cv2.destroyWindow("Kameratest")
+        except Exception as excp:
+            self.ui.statusbar.showMessage(f"Kameratest-Fenster nicht mehr gefunden ... kein Handlungsbedarf! Excp: {excp}",
+                                          3000)
+            cv2.destroyAllWindows()
 
 
 def kerbe(kerbe_val, art_obj, fluegel, alter):
@@ -4849,7 +5462,7 @@ def kerbe(kerbe_val, art_obj, fluegel, alter):
     kerbe_val = rberi_lib.return_float(kerbe_val)
     kerbe_val = round(kerbe_val, 1)
     if str(kerbe_val)[-1] != '0':
-        kerbe_val = round(float(str(kerbe_val)[:-3] + ".5"), 1)
+        kerbe_val = round(float(str(kerbe_val)[:-2] + ".5"), 1)
     else:
         kerbe_val = int(kerbe_val)
 
@@ -4889,12 +5502,18 @@ def kerbe(kerbe_val, art_obj, fluegel, alter):
                                        'Sumpf/Teich?').exec_()
             if a == QMessageBox.Yes:
                 art_obj.setCurrentText('Sumpfrohrsänger')
+                window.set_list_of_picture_paths_of_dir()
+                window.load_img(window.get_first_picture_of_dir())
+
         elif art_winkler == 2:
             a = rberi_lib.QMessageBoxB('ync', 'Laut der Übersicht Winkler handelt es sich um einen '
                                               'Teichrohrsänger. Soll die Art geändert werden?',
                                        'Sumpf/Teich?').exec_()
             if a == QMessageBox.Yes:
                 art_obj.setCurrentText('Teichrohrsänger')
+                window.set_list_of_picture_paths_of_dir()
+                window.load_img(window.get_first_picture_of_dir())
+
         elif art_winkler == 0:
             rberi_lib.QMessageBoxB('ok', 'Laut der Übersicht Winkler liegt der Vogel im '
                                          'unbestimmten Bereich. Bitte schaut Euch die Handschwingenunterschiede '
@@ -4940,7 +5559,8 @@ def write_df_to_qtable(df_to_integrate, table, *args, **kwargs):
             elif kwargs[kw] == 'kerbe':
                 col_to_mark = 18
 
-    print(f'table_rowcount_old = {table.rowCount()}')
+    if bd.get_debug():
+        print(f'table_rowcount_old = {table.rowCount()}')
     if operation == 'new':
         headers = list(df_to_integrate)
         table.clear()
@@ -4950,14 +5570,16 @@ def write_df_to_qtable(df_to_integrate, table, *args, **kwargs):
         table.setHorizontalHeaderLabels(headers)
     elif operation == 'add':
         if df_to_integrate.shape[1] != table.columnCount():
-            print("Cannot add Dataframe to Table. Columncount not matching.")
+            if bd.get_debug():
+                print("Cannot add Dataframe to Table. Columncount not matching.")
             return
         row_offset = table.rowCount()
         table.setRowCount(table.rowCount() + df_to_integrate.shape[0])
 
-    print(f'row_offset = {row_offset}')
-    print(f'table_rowcount_new = {table.rowCount()}')
-    print(f'df_shape rows : {df_to_integrate.shape[0]}')
+    if bd.get_debug():
+        print(f'row_offset = {row_offset}')
+        print(f'table_rowcount_new = {table.rowCount()}')
+        print(f'df_shape rows : {df_to_integrate.shape[0]}')
 
     df_array = df_to_integrate.values
     for row in range(df_to_integrate.shape[0]):
@@ -5161,37 +5783,19 @@ if __name__ == '__main__':
             current_u = CurrentUser()
             form = Loginpage(df_benutzer, current_u)
 
-            """qss = "./qss/Adaptic/Adaptic.qss"
-            qss = "./qss/SpyBot/SpyBot.qss"
-            qss = "./qss/MacOS.qss"
-            qss = "./qss/Darkeum/Darkeum.qss"
-            qss = "./qss/Diffnes/Diffnes.qss"
-            qss = "./qss/Fibers/Fibers.qss"
-            qss = "./qss/Gravira/Gravira.qss"
-            qss = "./qss/Incrypt/Incrypt.qss"
-            qss = "./qss/Integrid/Integrid.qss" #label müsste schwarz
-            qss = "./qss/Irrorater/Irrorater.qss"
-            qss = "./qss/Remover/Remover.qss"
-            qss = "./qss/Integrid/Integrid.qss"
-            """
-            qss = "./qss/Combinear/Combinear.qss"
-
-            with open(qss, "r") as fh:
-                app.setStyleSheet(fh.read())
-
             # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) --> dafür muss wieder qdarkstyle importiert werden
 
             if not bd.get_mit_anmeldung():
-                form.on_login_clicked()
+                form.auto_login('admin')
                 window = MainWindow(current_u)
 
                 # window = ImageViewer()
-                window.show()
+                window.showMaximized()
                 sys.exit(app.exec_())
             else:
                 if form.exec_() == QtWidgets.QDialog.Accepted:
                     window = MainWindow(current_u)
-                    window.show()
+                    window.showMaximized()
                     sys.exit(app.exec_())
 
     except Exception as e:

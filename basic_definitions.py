@@ -21,10 +21,13 @@ class constants(object):
         #
         #
         self.hilfeBilderPfad = 'C:/Users/wicht/PycharmProjects/DB_connection/Bilder/Hilfe/'
-        self.debug = False
+        self.debug = True
         self.mit_anmeldung = True
         self.tbl_name_ringserie = 'ringserie_neu'
-        self.age_adult_allowed = True
+        self.age_adult_allowed = False
+        self.zoom_seitenbreite = True
+        self.version = '0.1'
+        self.kontaktdaten = f'Stefan Bongers, mail@sseyfert.de, +49 176 2465 1751\nThomas Jascke, ??@??.??, +49 ... .... ....'
 
     def get_key(self):
         return self.key
@@ -70,3 +73,12 @@ class constants(object):
 
     def get_age_adult_allowed(self):
         return self.age_adult_allowed
+
+    def get_zoom_seitenbreite(self):
+        return self.zoom_seitenbreite
+
+    def get_version(self):
+        return self.version
+
+    def get_kontaktdaten(self):
+        return self.kontaktdaten
