@@ -339,9 +339,12 @@ class ArtverwaltungWindow(QWidget):
             self.close()
 
         self.ui.CMB_arten.setEditable(True)
-        for el in self.df_arten_sort.deutsch.tolist():
-            self.ui.CMB_arten.addItem(el)
-            # erstmalig werden die Werte des Vogels rechts eingetragen...
+
+        if self.ui.CMB_arten.count() <= 0:
+            for el in self.df_arten_sort.deutsch.tolist():
+                self.ui.CMB_arten.addItem(el)
+                # erstmalig werden die Werte des Vogels rechts eingetragen...
+
         self.fill_values()
 
         self.ui.BTN_close.clicked.connect(self.on_close_click)
@@ -428,6 +431,10 @@ class ArtverwaltungWindow(QWidget):
         self.clear_artenverwaltung()
         self.clear_artenverwaltung('use')
         self.set_state_tuple("start")
+        self.ui.CMB_arten.setEnabled(False)
+        self.ui.BTN_bearb.setEnabled(False)
+        self.ui.BTN_neu.setEnabled(False)
+        self.ui.BTN_close.setEnabled(False)
 
     def leave_necc_edit(self, sender=None):
         text = ""
@@ -482,9 +489,12 @@ class ArtverwaltungWindow(QWidget):
             missingargs_ui.setStandardButtons(QMessageBox.Ok)
             missingargs_ui.setDefaultButton(QMessageBox.Ok)
             missingargs_ui.exec_()
+            return
         else:
             # es sind schon mal alle notwendigen Felder befüllt.
             # Prüfung, ob die Art schon vorhanden ist
+            ringtypfemale = 'NULL' if self.ui.CMB_ringtyp_female.currentIndex() == 0 else get_ringtypref(
+                self.ui.CMB_ringtyp_female.currentText())
             if self.ui.INP_ArtL.text() in self.df_arten["lateinisch"].tolist():
                 really_update = QMessageBox()
                 really_update.setIcon(QMessageBox.Question)
@@ -497,16 +507,17 @@ class ArtverwaltungWindow(QWidget):
                 if x == QMessageBox.Yes:
                     try:
                         cursor = self.get_engine().cursor()
-                        sql_txt = ("UPDATE arten SET deutsch='" + self.ui.INP_ArtD.text() + "', lateinisch ='" +
-                                   self.ui.INP_ArtL.text() + "', englisch ='" + self.ui.INP_ArtE.text() + "', " +
-                                   "erbe_kurz ='" + self.ui.INP_erbe_kurz.text() + "', " + "prg_art =" +
-                                   str(self.ui.CHB_programmart.isChecked()) + ", " + "mri_art =" +
-                                   str(self.ui.CHB_mriart.isChecked()) + ", " + "ringtypMaleRef =" +
-                                   get_ringtypref(self.ui.CMB_ringtyp_male.currentText()) + ", " +
-                                   "ringtypFemaleRef =" +
-                                   get_ringtypref(self.ui.CMB_ringtyp_female.currentText()) + ", " +
-                                   "juv_moult =" + str(self.ui.CHB_juv_mauser.isChecked()) + ", " + "sex_determ =" +
-                                   str(self.ui.CHB_sex_moegl.isChecked()) + ", " +
+                        sql_txt = ("UPDATE arten SET deutsch='" + self.ui.INP_ArtD.text() + "', " +
+                                   "lateinisch ='" + self.ui.INP_ArtL.text() + "', " +
+                                   "englisch ='" + self.ui.INP_ArtE.text() + "', " +
+                                   "esf_kurz ='" + self.ui.INP_ESF_kurz.text() + "', " +
+                                   "erbe_kurz ='" + self.ui.INP_erbe_kurz.text() + "', " +
+                                   "prg_art =" + ('1' if self.ui.CHB_programmart.isChecked() else '0') + ", " +
+                                   "mri_art =" + ('1' if self.ui.CHB_mriart.isChecked() else '0') + ", " +
+                                   "ringtypMaleRef =" + get_ringtypref(self.ui.CMB_ringtyp_male.currentText()) + ", " +
+                                   "ringtypFemaleRef =" + ringtypfemale + ", " +
+                                   "juv_moult =" + ('1' if self.ui.CHB_juv_mauser.isChecked() else '0') + ", " +
+                                   "sex_determ =" + ('1' if self.ui.CHB_sex_moegl.isChecked() else '0') + ", " +
                                    "bemerkung ='" + self.ui.INP_Bemerkung.toPlainText() + "', " +
                                    "euring ='" + self.ui.INP_euring.text() + "', ")
                         if self.tolerances:
@@ -528,6 +539,12 @@ class ArtverwaltungWindow(QWidget):
                             sql_txt += "g_d_neg = " + str(self.tolerances['masse_faktor_min']) + ", "
                             sql_txt += "g_d_pos = " + str(self.tolerances['masse_faktor_max']) + ", "
                             sql_txt += "show_g_msg = " + str(self.tolerances['show_masse_msg']) + " "
+
+                        if sql_txt[-1] == ',':
+                            sql_txt = sql_txt[:-1]
+                        elif sql_txt[-1] == ' ' and sql_txt[-2] == ',':
+                            sql_txt = sql_txt[:-2]
+                        sql_txt += " "
                         sql_txt += "WHERE deutsch = '" + self.ui.INP_ArtD.text() + "'"
                         print(sql_txt)
                         cursor.execute(sql_txt)
@@ -543,7 +560,7 @@ class ArtverwaltungWindow(QWidget):
                                                "Fehlerbeschreibung. Bitte kontaktiert den " +
                                                "Support!", "Fehlermeldung", str(exc)).exec_()
                 else:
-                    really_update.close()
+                    return
             else:
                 try:
                     cursor = self.get_engine().cursor()
@@ -577,15 +594,20 @@ class ArtverwaltungWindow(QWidget):
                         "ring_serie, ringtypMaleRef, ringtypFemaleRef, juv_moult, sex_determ, bemerkung, euring, " +
                         tol_txt_set + ") "
                         "VALUES ('" +
-                        self.ui.INP_ArtD.text() + "', '" + self.ui.INP_ArtL.text() + "', '" +
-                        self.ui.INP_ArtE.text() + "', '" + self.ui.INP_ESF_kurz.text() + "', '" +
-                        self.ui.INP_erbe_kurz.text() + "', " + str(self.ui.CHB_programmart.isChecked()) + ", " +
-                        str(self.ui.CHB_mriart.isChecked()) + ", NULL, " +
+                        self.ui.INP_ArtD.text() + "', '" +
+                        self.ui.INP_ArtL.text() + "', '" +
+                        self.ui.INP_ArtE.text() + "', '" +
+                        self.ui.INP_ESF_kurz.text() + "', '" +
+                        self.ui.INP_erbe_kurz.text() + "', " +
+                        str(self.ui.CHB_programmart.isChecked()) + ", " +
+                        str(self.ui.CHB_mriart.isChecked()) +
+                        ", NULL, " +
                         get_ringtypref(self.ui.CMB_ringtyp_male.currentText()) + ", " +
-                        get_ringtypref(self.ui.CMB_ringtyp_female.currentText()) + ", " +
-                        str(self.ui.CHB_juv_mauser.isChecked()) + ", " + str(
-                            self.ui.CHB_sex_moegl.isChecked()) + ", '" +
-                        self.ui.INP_Bemerkung.toPlainText() + "', '" + self.ui.INP_euring.text() + "', " +
+                        ringtypfemale + ", " +
+                        str(self.ui.CHB_juv_mauser.isChecked()) + ", " +
+                        str(self.ui.CHB_sex_moegl.isChecked()) + ", '" +
+                        self.ui.INP_Bemerkung.toPlainText() + "', '" +
+                        self.ui.INP_euring.text() + "', " +
                         tol_txt_val + ")")
                     self.get_engine().commit()
                     cursor.close()
@@ -622,6 +644,7 @@ class ArtverwaltungWindow(QWidget):
     def on_close_click(self):
         if not self.get_bearbeitungsstatus():
             self.close()
+            self.destroy(True, True)
         else:
             self.query_verwerfen("exit")
 
@@ -646,7 +669,7 @@ class ArtverwaltungWindow(QWidget):
                     item.setEnabled(True)
             elif isinstance(item, QComboBox):
                 if setting == "lock":
-                    item.setCurrentIndex = -1
+                    item.setCurrentIndex = 0
                     item.setEnabled(False)
                 elif setting == "use":
                     item.setEnabled(True)
@@ -655,7 +678,7 @@ class ArtverwaltungWindow(QWidget):
             item = self.ui.gridLayout.itemAt(el).widget()
             if isinstance(item, QComboBox):
                 if setting == "lock":
-                    item.setCurrentIndex = -1
+                    item.setCurrentIndex = 0
                     item.setEnabled(False)
                 elif setting == "use":
                     item.setEnabled(True)
@@ -666,6 +689,11 @@ class ArtverwaltungWindow(QWidget):
         elif setting == "use":
             self.ui.BTN_save.setEnabled(True)
             self.ui.BTN_toleranzen.setEnabled(True)
+
+        self.ui.CMB_arten.setEnabled(True)
+        self.ui.BTN_bearb.setEnabled(True)
+        self.ui.BTN_neu.setEnabled(True)
+        self.ui.BTN_close.setEnabled(True)
 
     def on_bearb_click(self):
         # hier wird (einmalig) alle ringserien aus arten in ringserien eingetragen... - erstbefüllung
@@ -698,26 +726,33 @@ class ArtverwaltungWindow(QWidget):
             item = self.ui.gridLayout.itemAt(el).widget()
             if item is not None:
                 if self.bd.get_debug():
-                    print(str(item.objectName) + " ... isEnabled = " + str(item.isEnabled()))
+                    print(f'Objektname = {item.objectName()} ... isEnabled = {item.isEnabled()}')
                 item.setEnabled(True)
+                print(f'Objektname = {item.objectName()} ... isEnabled = {item.isEnabled()}')
+
         self.ui.BTN_save.setEnabled(True)
         self.ui.BTN_toleranzen.setEnabled(True)
         if self.ui.CMB_arten.currentText() != "":
             self.fill_values()
         self.set_state_tuple("start")
+        self.ui.CMB_arten.setEnabled(False)
+        self.ui.BTN_bearb.setEnabled(False)
+        self.ui.BTN_neu.setEnabled(False)
+        self.ui.BTN_close.setEnabled(False)
 
     def fill_values(self):
         # self.counter += 1
         # print(f"fill_values aufgerufen ... {self.counter}. Mal")
-        df_ringtypen = pd.read_sql('SELECT * FROM ringtyp', self.get_engine())
 
-        self.ui.CMB_ringtyp_male.addItem("TypID; Klasse; Material; Durchmesser [mm]")
-        self.ui.CMB_ringtyp_female.addItem("TypID; Klasse; Material; Durchmesser [mm]")
-        for index, el_series in df_ringtypen.iterrows():
-            el_txt = (str(el_series.ringtypID) + "; " + str(el_series.klasse) + "; " + str(el_series.material) + "; " +
-                      str(el_series.durchmesser))
-            self.ui.CMB_ringtyp_male.addItem(el_txt)
-            self.ui.CMB_ringtyp_female.addItem(el_txt)
+        if self.ui.CMB_ringtyp_male.count() <= 0:
+            df_ringtypen = pd.read_sql('SELECT * FROM ringtyp', self.get_engine())
+            self.ui.CMB_ringtyp_male.addItem("TypID; Klasse; Material; Durchmesser [mm]")
+            self.ui.CMB_ringtyp_female.addItem("TypID; Klasse; Material; Durchmesser [mm]")
+            for index, el_series in df_ringtypen.iterrows():
+                el_txt = (str(el_series.ringtypID) + "; " + str(el_series.klasse) + "; " + str(el_series.material) + "; " +
+                          str(el_series.durchmesser))
+                self.ui.CMB_ringtyp_male.addItem(el_txt)
+                self.ui.CMB_ringtyp_female.addItem(el_txt)
 
         df_selected_art = pd.read_sql(
             'SELECT * FROM arten WHERE deutsch="' + str(self.ui.CMB_arten.currentText()) + '"', self.get_engine())
@@ -727,7 +762,17 @@ class ArtverwaltungWindow(QWidget):
             for el in range(self.ui.CMB_ringtyp_male.count()):
                 if typ_male_id in self.ui.CMB_ringtyp_male.itemText(el):
                     self.ui.CMB_ringtyp_male.setCurrentText(self.ui.CMB_ringtyp_male.itemText(el))
-            if not isinstance(typ_female_id, type(None)):
+            if typ_female_id != 'None':
+                for el in range(self.ui.CMB_ringtyp_female.count()):
+                    if typ_female_id in self.ui.CMB_ringtyp_female.itemText(el):
+                        self.ui.CMB_ringtyp_female.setCurrentText(self.ui.CMB_ringtyp_female.itemText(el))
+                    else:
+                        self.ui.CMB_ringtyp_female.setCurrentIndex(0)
+            else:
+                self.ui.CMB_ringtyp_female.setCurrentText(self.ui.CMB_ringtyp_female.itemText(0))
+
+
+            """if not isinstance(typ_female_id, type(None)):
                 if typ_female_id != 'None':
                     self.ui.CMB_ringtyp_female.setEnabled(True)
                     for el in range(self.ui.CMB_ringtyp_female.count()):
@@ -736,8 +781,7 @@ class ArtverwaltungWindow(QWidget):
                 else:
                     self.ui.CMB_ringtyp_female.setEnabled(False)
             else:
-                self.ui.CMB_ringtyp_female.setEnabled(False)
-
+                self.ui.CMB_ringtyp_female.setEnabled(False)"""
             self.ui.INP_ArtD.setText(df_selected_art["deutsch"][0])
             self.ui.INP_ArtL.setText(df_selected_art["lateinisch"][0])
             self.ui.INP_ArtE.setText(df_selected_art["englisch"][0])

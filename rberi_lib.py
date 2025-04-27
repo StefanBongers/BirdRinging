@@ -3,8 +3,8 @@ from datetime import date, timedelta
 from typing import Literal
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtWidgets import QMessageBox, QWidget, QTableWidget, QStyledItemDelegate
+from PyQt5.QtGui import QPainter, QPen, QTextCursor
+from PyQt5.QtWidgets import QMessageBox, QWidget, QTableWidget, QStyledItemDelegate, QTextEdit
 
 
 class ReadOnlyDelegate(QStyledItemDelegate):
@@ -73,10 +73,13 @@ class QMessageBoxB(QMessageBox):
                  typ: Literal['ok', 'yn', 'ny', 'ync', 'nyc', 'cyn', 'cny'] = 'ok',
                  text: str | None = "",
                  title: str | None = "Information",
-                 det_t: str | list | None = None):
+                 det_t: str | list | None = None,
+                 *args,
+                 **kwargs):
         super().__init__()
         self.setText(text)
         self.setWindowTitle(title)
+
         if isinstance(det_t, str):
             self.setDetailedText(det_t)
         elif isinstance(det_t, list):
@@ -109,6 +112,26 @@ class QMessageBoxB(QMessageBox):
         elif (typ == "cyn") or (typ == "cny"):
             self.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             self.setDefaultButton(QMessageBox.Cancel)
+
+        if kwargs:
+            for kw in kwargs:
+                if kw == 'icontyp':
+                    if kwargs[kw] == 'Warning':
+                        self.setIcon(QMessageBox.Warning)
+                    elif kwargs[kw] == 'Question':
+                        self.setIcon(QMessageBox.Question)
+                    elif kwargs[kw] == 'Information':
+                        self.setIcon(QMessageBox.Information)
+                    elif kwargs[kw] == 'Critical':
+                        self.setIcon(QMessageBox.Critical)
+                    else:
+                        self.setIcon(QMessageBox.NoIcon)
+                if kw == 'qss':
+                    try:
+                        with open(kwargs[kw], "r") as fh:
+                            self.setStyleSheet(fh.read())
+                    except Exception:
+                        pass
 
 
 class UI_MainW(object):
@@ -192,3 +215,32 @@ class Stadium(QWidget):
     def mouseMoveEvent(self, event):
         self.pos = event.pos()
         self.update()
+
+
+class QTextEditFeedback(QTextEdit):
+    def __init__(self, maxTextLength: int = 5000, parent=None):
+        QTextEdit.__init__(self, parent=parent)
+        self.maxTextLength = maxTextLength
+        self.setTabChangesFocus(True)
+        self.textChanged.connect(self.__textChanged)
+        self.diff = maxTextLength
+
+    def __textChanged(self):
+        self.diff = self.maxTextLength - len(self.toPlainText())
+        if self.diff >= 0:
+            return
+        new_txt = self.toPlainText()
+        new_txt = new_txt[:self.maxTextLength]
+        self.setText(new_txt)
+        self.moveCursor(QTextCursor.MoveOperation.End)
+
+    def set_max_text_length(self, val: int = 5000):
+        self.maxTextLength = val
+
+    def get_max_text_length(self):
+        return self.maxTextLength
+
+    def get_diff(self):
+        return self.diff
+
+
